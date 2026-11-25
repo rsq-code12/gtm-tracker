@@ -908,8 +908,16 @@ const byBy = (a, b) => (a.by || '9999').localeCompare(b.by || '9999');
 const needsOk = (t) => t.status !== 'done' && (t.info.need || []).some((n) => /approv|\bOK\b|\bgo\b|decision|agree/i.test(n));
 const accessOk = (a) => !['received', 'not needed'].includes(a.status) && /\bOK\b|agree|approved/i.test(`${a.how} ${(a.howTo || []).join(' ')}`);
 
+// Dateless mode (B.meta.dateless): work is grouped into stage windows ("Month 1", "Month 2") and ordered steps, with no calendar dates.
+const dateless = () => !!(B && B.meta && B.meta.dateless);
 function state(t) {
   if (t.status === 'done') return { k: 'done', label: 'Done' };
+  if (t.waitingOn) return { k: 'wait', label: 'Waiting on ' + t.waitingOn };
+  if (dateless() || !t.due) {
+    if (t.status === 'waiting') return { k: 'wait', label: 'Waiting' };
+    if (t.status === 'doing') return { k: 'doing', label: 'In progress' };
+    return { k: 'todo', label: 'Not started' };
+  }
   const team = TEAM.includes(t.owner);
   if (t.due < today) return { k: 'late', label: team ? 'Needed now' : 'Running late' };
   if (t.status === 'waiting') return { k: 'wait', label: 'Waiting' };
@@ -918,6 +926,12 @@ function state(t) {
   return { k: 'todo', label: 'Not started' };
 }
 function when(t) {
+  if (dateless() || !t.due) {
+    if (t.status === 'done') return { text: 'Done', cls: 'done' };
+    if (t.waitingOn) return { text: 'Waiting on ' + t.waitingOn, cls: 'soon' };
+    if (t.status === 'doing') return { text: 'In progress', cls: '' };
+    return { text: t.milestoneShort || 'Queued', cls: '' };
+  }
   if (t.status === 'done') return { text: t.doneOn ? `Done ${fmt(t.doneOn)}` : 'Done', cls: 'done' };
   const s = diff(today, t.start), d = diff(today, t.due);
   if (s > 0) return { text: s === 1 ? 'Starts tomorrow' : s < 7 ? `Starts ${dayName(t.start)}` : `Starts ${fmt(t.start)}`, cls: '' };
@@ -927,8 +941,8 @@ function when(t) {
   if (d < 7) return { text: `Due ${dayName(t.due)}`, cls: '' };
   return { text: `Due ${fmt(t.due)}`, cls: '' };
 }
-function byWhen(by) {
-  if (!by) return { text: '', cls: '' };
+function byWhen(by, badge) {
+  if (!by) return { text: badge || '', cls: badge ? 'soon' : '' };
   const d = diff(today, by);
   if (d < 0) return { text: `Was due ${fmt(by)}`, cls: 'late' };
   if (d === 0) return { text: 'Needed today', cls: 'soon' };
@@ -959,16 +973,24 @@ function compute() {
   const done = tasks.filter((t) => t.status === 'done');
   const open = tasks.filter((t) => t.status !== 'done');
   const pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
-  const linked = new Set(B.access.flatMap((a) => a.tasks));
-  const aItem = (a) => ({ kind: 'access', id: a.id, icon: 'key', title: a.item, sub: 'Access', by: a.by });
-  const tItem = (t, sub, ic) => ({ kind: 'task', id: t.id, icon: ic, title: t.title, sub, by: t.due });
+  const dl = !!M.dateless;
+  const linked = new Set(B.access.flatMap((a) => a.tasks || []));
+  const aItem = (a) => ({ kind: 'access', id: a.id, icon: a.kind === 'decision' ? 'pen' : 'key', title: a.item, sub: dl && a.from ? `From ${a.from}` : 'Access', by: a.by, badge: a.badge || (a.waitingOn ? `Waiting on ${a.waitingOn}` : ''), wo: a.waitingOn || '', order: a.order });
+  const tItem = (t, sub, ic) => ({ kind: 'task', id: t.id, icon: ic, title: t.title, sub, by: t.due, badge: t.waitingOn ? `Waiting on ${t.waitingOn}` : '', wo: t.waitingOn || '' });
   const team = tasks.filter((t) => TEAM.includes(t.owner) && !linked.has(t.id));
-  const inputs = open.filter((t) => t.owner === 'lead' && t.info.need.length && !linked.has(t.id));
+  const inputs = open.filter((t) => t.owner === 'lead' && (t.info.need || []).length && !linked.has(t.id) && !t.waitingOn);
   const fromTeam = (t) => (t.owner === 'client' ? 'From your team' : `From ${who(t.owner)}`);
-  const needNow = [
+  // Tasks waiting on a named person, unless an access item already covers them (so nothing shows twice).
+  const waitingOn = open.filter((t) => t.waitingOn && !linked.has(t.id)).map((t) => tItem(t, phaseOf(t.phase).name, 'user'));
+  const byOrder = (a, b) => (a.order ?? 999) - (b.order ?? 999);
+  const needNow = dl ? [
+    ...B.access.filter((a) => ['asked', 'waiting'].includes(a.status)).map(aItem).sort(byOrder),
+    ...waitingOn,
+  ] : [
     ...B.access.filter((a) => ['asked', 'waiting'].includes(a.status)).map(aItem),
-    ...team.filter((t) => t.status !== 'done' && (t.start <= addDays(today, 3) || t.status === 'waiting')).map((t) => tItem(t, fromTeam(t), 'user')),
+    ...team.filter((t) => t.status !== 'done' && !t.waitingOn && (t.start <= addDays(today, 3) || t.status === 'waiting')).map((t) => tItem(t, fromTeam(t), 'user')),
     ...inputs.filter((t) => t.status === 'waiting').map((t) => tItem(t, 'Your input', 'pen')),
+    ...waitingOn,
   ].sort(byBy);
   const qOpen = (B.questions || []).filter((q) => !answered(q.id));
   if (qOpen.length) needNow.unshift({ kind: 'view', id: 'questions', icon: 'chat', title: B.questionsTitle || 'Questions for you', sub: `Your input · ${qOpen.length} to answer`, by: qDue() });
@@ -985,13 +1007,13 @@ function compute() {
   ];
   const leadLate = open.filter((t) => t.owner === 'lead' && t.due < today);
   const teamLate = needNow.filter((n) => n.by && n.by < today);
-  const launched = today >= M.launch;
-  const health = launched ? { label: 'Live', tone: '' } : leadLate.length ? { label: 'Catching up', tone: 'warn' } : teamLate.length ? { label: 'Waiting on a few inputs', tone: 'warn' } : { label: 'On track', tone: '' };
+  const launched = !dl && !!M.launch && today >= M.launch;
+  const health = dl || !M.launch ? { label: needNow.length ? 'Waiting on inputs' : 'Active', tone: needNow.length ? 'warn' : '' } : launched ? { label: 'Live', tone: '' } : leadLate.length ? { label: 'Catching up', tone: 'warn' } : teamLate.length ? { label: 'Waiting on a few inputs', tone: 'warn' } : { label: 'On track', tone: '' };
   const feed = [
-    ...B.updates.map((u) => { const r = refOpen(u.ref); return { date: u.date, kind: 'update', text: u.text, refAttr: r ? r.attr : '' }; }),
+    ...B.updates.map((u) => { const r = refOpen(u.ref); return { date: u.date, label: u.label, kind: 'update', text: u.text, refAttr: r ? r.attr : '' }; }),
     ...done.filter((t) => t.doneOn).map((t) => ({ date: t.doneOn, kind: 'done', id: t.id, text: t.title })),
     ...tasks.filter((t) => t.startedOn && t.status !== 'done').map((t) => ({ date: t.startedOn, kind: 'start', id: t.id, text: t.title })),
-  ].sort((a, b) => b.date.localeCompare(a.date) || (a.kind === 'update' ? -1 : 1));
+  ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || (a.kind === 'update' ? -1 : 1));
   const nextMs = (B.milestones || []).map(byId).filter(Boolean).find((t) => t.status !== 'done');
   return { qOpen, M, tasks, done, open, pct, needNow, needSoon, needDone, health, launched, feed, nextMs };
 }
@@ -1002,7 +1024,7 @@ function taskRow(t) {
   return `<button class="row" data-task="${t.id}">${icon(state(t).k)}<span class="row-t">${esc(t.title)}<small class="m-when ${w.cls}">${w.text}</small></span><span class="when ${w.cls}">${w.text}</span>${ccHtml(countFor([`task:${t.id}`]))}${svg('chev', 'chev')}</button>`;
 }
 function needRow(n, tone = '') {
-  const w = tone === 'done' ? { text: 'Received', cls: 'done' } : byWhen(n.by);
+  const w = tone === 'done' ? { text: 'Received', cls: 'done' } : byWhen(n.by, n.badge);
   const attr = n.kind === 'access' ? `data-access="${n.id}"` : n.kind === 'view' ? `data-view="${n.id}"` : `data-task="${n.id}"`;
   return `<button class="row" ${attr}><span class="kind ${tone}">${svg(tone === 'done' ? 'check' : n.icon)}</span><span class="row-t">${esc(n.title)}<small>${esc(n.sub)}<span class="m-when ${w.cls}"> · ${w.text}</span></small></span><span class="when ${w.cls}">${w.text}</span>${ccHtml(countFor([`${n.kind}:${n.id}`]))}${svg('chev', 'chev')}</button>`;
 }
@@ -1010,12 +1032,24 @@ function feedRow(f) {
   const label = f.kind === 'done' ? '<em class="done">Done</em> ' : f.kind === 'start' ? '<em>Started</em> ' : '';
   const attr = f.refAttr || (f.id ? `data-task="${f.id}"` : '');
   const tag = attr ? 'button' : 'div';
-  return `<${tag} class="up" ${attr}><time>${f.date === today ? 'Today' : fmt(f.date)}</time><span>${label}${esc(f.text)}</span></${tag}>`;
+  return `<${tag} class="up" ${attr}><time>${esc(f.label || (f.date === today ? 'Today' : fmt(f.date)))}</time><span>${label}${esc(f.text)}</span></${tag}>`;
 }
 function phaseInfo(p, c) {
-  const ts = c.tasks.filter((t) => t.phase === p.id).sort((a, b) => a.start.localeCompare(b.start) || byDue(a, b));
+  const all = c.tasks.filter((t) => t.phase === p.id);
+  const dl = dateless() || !p.start;
+  // Dateless: keep plan order. Dated: sort by start, then due.
+  const ts = dl ? all : all.sort((a, b) => a.start.localeCompare(b.start) || byDue(a, b));
   const dn = ts.filter((t) => t.status === 'done').length;
-  const finished = ts.length > 0 && dn === ts.length, current = p.start <= today && today <= p.end;
+  const finished = ts.length > 0 && dn === ts.length;
+  if (dl) {
+    // Waiting tasks only make a later stage "Active" once every earlier stage is finished, so blocked future work doesn't light up.
+    const idx = B.phases.indexOf(p);
+    const earlierOpen = B.phases.slice(0, Math.max(0, idx)).some((q) => c.tasks.some((t) => t.phase === q.id && t.status !== 'done'));
+    const current = !finished && (!!p.active || ts.some((t) => t.status === 'doing') || (!earlierOpen && ts.some((t) => t.status === 'waiting')));
+    const tag = finished ? '<span class="tag done">Done</span>' : current ? '<span class="tag now">Active</span>' : `<span class="tag next">${esc(p.tag || 'Up next')}</span>`;
+    return { ts, dn, finished, current, tag, comments: countFor([`phase:${p.id}`, ...ts.map((t) => `task:${t.id}`)]) };
+  }
+  const current = p.start <= today && today <= p.end;
   const tag = finished ? '<span class="tag done">Done</span>' : current ? '<span class="tag now">In progress</span>' : p.end < today ? '<span class="tag warn">Finishing</span>' : `<span class="tag next">${diff(today, p.start) <= 7 ? `Starts ${dayName(p.start)}` : `From ${fmt(p.start)}`}</span>`;
   return { ts, dn, finished, current, tag, comments: countFor([`phase:${p.id}`, ...ts.map((t) => `task:${t.id}`)]) };
 }
@@ -1055,6 +1089,7 @@ function fadeText(life) {
   return last.toDateString() === tmr.toDateString() ? 'Here until tomorrow' : `Here until ${last.toLocaleDateString('en-GB', { weekday: 'long' })}`;
 }
 function hotWhen(x) {
+  if (x.label) return esc(x.label); // x.date still drives the 3-day fade
   if (x.at && x.date === today) return ago(x.at);
   const a = diff(x.date, today);
   return a <= 0 ? 'Today' : a === 1 ? 'Yesterday' : fmtW(x.date);
@@ -1065,7 +1100,7 @@ function hotItems(c) {
   for (const u of B.updates || []) if (live(u.date)) {
     const r = refOpen(u.ref);
     if (r) told.add(`${r.type}:${r.id}`);
-    out.push({ kind: 'update', rank: 0, date: u.date, at: u.at, text: u.text, ref: r, attr: r ? r.attr : 'data-view="updates"' });
+    out.push({ kind: 'update', rank: 0, date: u.date, at: u.at, label: u.label, text: u.text, ref: r, attr: r ? r.attr : 'data-view="updates"' });
   }
   for (const d of B.documents || []) if (live(d.date) && !/^due|coming/i.test(d.status || '') && !told.has(`doc:${d.id}`)) out.push({ kind: 'doc', rank: 1, date: d.date, id: d.id, title: d.title, text: d.summary || docStatusText(d), attr: `data-doc="${esc(d.id)}"` });
   for (const t of c.done) if (live(t.doneOn) && !told.has(`task:${t.id}`)) out.push({ kind: 'done', rank: 2, date: t.doneOn, id: t.id, title: t.title, sub: phaseOf(t.phase).name, attr: `data-task="${esc(t.id)}"` });
@@ -1105,17 +1140,25 @@ function hotBlocks(c) {
 
 /* ---------- Page ---------- */
 function page(c) {
-  const M = c.M, d = diff(today, M.launch);
-  const line = c.launched ? `Launched ${fmtL(M.launch)}` : `${plural(d, 'day')} to go${c.nextMs ? ` · Next milestone: <b>${esc(c.nextMs.title)}</b>, ${fmtW(c.nextMs.due)}` : ''}`;
+  const M = c.M, dl = !!M.dateless || !M.launch;
+  let heading, line;
+  if (dl) {
+    heading = `<h1>${esc(M.headline || M.project)}</h1>`;
+    line = esc(M.subline || '');
+  } else {
+    const d = diff(today, M.launch);
+    heading = `<h1>${c.launched ? esc(M.liveLabel || `${M.project} is live`) : `${esc(M.goalLabel || 'Launch on')} ${esc(fmtL(M.launch))}`}</h1>`;
+    line = c.launched ? `Launched ${fmtL(M.launch)}` : `${plural(d, 'day')} to go${c.nextMs ? ` · Next milestone: <b>${esc(c.nextMs.title)}</b>, ${fmtW(c.nextMs.due)}` : ''}`;
+  }
   const needHtml = c.needNow.length ? `
-    <div class="box need"><div class="need-h">Waiting on you <span class="count">${c.needNow.length}</span></div>
+    <div class="box need"><div class="need-h">${M.dateless ? 'Waiting on Ayesha &amp; Lalit' : 'Waiting on you'} <span class="count">${c.needNow.length}</span></div>
       ${c.needNow.slice(0, 3).map((n) => needRow(n)).join('')}
-      <button class="more" data-view="needs">See everything we need from you</button></div>` : '';
+      <button class="more" data-view="needs">${M.dateless ? 'See everything we’re waiting on' : 'See everything we need from you'}</button></div>` : '';
   const cards = B.phases.map((p, i) => {
     const x = phaseInfo(p, c);
     return `<button class="pc ${x.current && !x.finished ? 'now' : ''}" data-phase="${p.id}">
       <span class="pc-top"><span>${String(i + 1).padStart(2, '0')}</span>${x.tag}</span>
-      <span class="pc-name">${esc(p.name)}</span><span class="pc-d">${fmt(p.start)} – ${fmt(p.end)}</span>
+      <span class="pc-name">${esc(p.name)}</span><span class="pc-d">${p.window ? esc(p.window) : `${fmt(p.start)} – ${fmt(p.end)}`}</span>
       <span class="pc-bot">${mring(x.ts.length ? x.dn / x.ts.length : 0, p.color)}<span><b>${x.dn}</b> of ${x.ts.length} done</span>${ccHtml(x.comments)}</span></button>`;
   }).join('');
   const general = countFor(['general']);
@@ -1133,7 +1176,7 @@ function page(c) {
     </nav>
     <section class="status">
       <span class="health ${c.health.tone}"><i></i>${c.health.label}</span>
-      <h1>${c.launched ? esc(M.liveLabel || `${M.project} is live`) : `${esc(M.goalLabel || 'Launch on')} ${esc(fmtL(M.launch))}`}</h1>
+      ${heading}
       <p class="meta">${line}</p>
       <div class="prog"><span class="bar"><i style="width:${c.pct}%"></i></span><div class="prog-l"><span><b>${c.done.length}</b> of ${c.tasks.length} tasks done</span><span>${c.pct}%</span></div></div>
     </section>
@@ -1152,46 +1195,69 @@ const ul = (a) => `<ul class="ul">${a.map((x) => `<li>${esc(x)}</li>`).join('')}
 const chip = (t) => `<button class="chip" data-task="${t.id}">${icon(state(t).k)}<span>${esc(t.title)}</span></button>`;
 function vTask(t) {
   const p = phaseOf(t.phase), s = state(t), w = when(t), I = t.info;
-  const acc = B.access.filter((a) => a.tasks.includes(t.id));
-  const after = t.depends.map(byId).filter(Boolean);
-  const next = B.tasks.filter((x) => x.depends.includes(t.id));
-  const props = [['Status', `${icon(s.k)}${esc(s.label)}`], ['Owner', esc(who(t.owner))], ['Dates', `${t.start === t.due ? fmtW(t.due) : `${fmt(t.start)} → ${fmt(t.due)}`} <span style="color:var(--muted)">· ${w.text}</span>`]];
+  const acc = B.access.filter((a) => (a.tasks || []).includes(t.id));
+  const after = (t.depends || []).map(byId).filter(Boolean);
+  const next = B.tasks.filter((x) => (x.depends || []).includes(t.id));
+  const props = [['Status', `${icon(s.k)}${esc(s.label)}`], ['Owner', esc(who(t.owner))]];
+  if (t.waitingOn && t.status !== 'done') props.push(['Waiting on', esc(t.waitingOn)]);
+  if (dateless()) props.push(['Group', esc(p.name)]);
+  if (t.milestone) props.push(['Milestone', esc(t.milestone)]);
+  if (!dateless() && t.due) props.push(['Dates', `${t.start === t.due ? fmtW(t.due) : `${fmt(t.start)} → ${fmt(t.due)}`} <span style="color:var(--muted)">· ${w.text}</span>`]);
   if (t.progress && t.status !== 'done') props.push(['Progress', `<span class="bar"><i style="width:${(t.progress[0] / t.progress[1]) * 100}%"></i></span><span>${t.progress[0]} of ${t.progress[1]} steps</span>`]);
-  if (t.status === 'done' && t.doneOn) props.push(['Completed', fmtL(t.doneOn)]);
+  if (t.status === 'done' && t.doneOn && !dateless()) props.push(['Completed', fmtL(t.doneOn)]);
   let h = `<div class="p-eye"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</div><h3>${esc(t.title)}</h3><dl class="props">${props.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
   if (I.what) h += `<div class="blk"><h4>What this is</h4><p>${esc(I.what)}</p></div>`;
   if (I.why) h += `<div class="blk"><h4>Why it matters</h4><p>${esc(I.why)}</p></div>`;
-  if (I.need.length && t.status !== 'done') h += `<div class="note warn"><h4>What we need from you</h4>${ul(I.need)}${acc.length ? `<div class="chips" style="margin-top:10px">${acc.map((a) => `<button class="chip" data-access="${a.id}">${svg('key', 'ic')}<span>${esc(a.item)}</span></button>`).join('')}</div>` : ''}</div>`;
-  if (I.involves.length) h += `<div class="blk"><h4>What's involved</h4>${ul(I.involves)}</div>`;
+  if (Array.isArray(t.subtasks) && t.subtasks.length) h += `<div class="blk"><h4>Steps / subtasks</h4><ol class="ol">${t.subtasks.map((x) => `<li>${esc(typeof x === 'string' ? x : x.title || x.text || '')}</li>`).join('')}</ol></div>`;
+  if ((I.need || []).length && t.status !== 'done') h += `<div class="note warn"><h4>${t.waitingOn ? `Waiting on ${esc(t.waitingOn)}` : 'What we need from you'}</h4>${ul(I.need)}${acc.length ? `<div class="chips" style="margin-top:10px">${acc.map((a) => `<button class="chip" data-access="${a.id}">${svg('key', 'ic')}<span>${esc(a.item)}</span></button>`).join('')}</div>` : ''}</div>`;
+  if ((I.involves || []).length) h +=`<div class="blk"><h4>What's involved</h4>${ul(I.involves)}</div>`;
   if (I.done) h += `<div class="note good"><h4>${t.status === 'done' ? 'Delivered' : 'Done when'}</h4><p>${esc(I.done)}</p></div>`;
   if (after.length) h += `<div class="blk"><h4>Comes after</h4><div class="chips">${after.map(chip).join('')}</div></div>`;
   if (next.length) h += `<div class="blk"><h4>Leads to</h4><div class="chips">${next.map(chip).join('')}</div></div>`;
   return h + commentsHtml(`task:${t.id}`, needsOk(t));
 }
 function vAccess(a) {
-  const ts = a.tasks.map(byId).filter(Boolean);
-  const w = ['received', 'not needed'].includes(a.status) ? null : byWhen(a.by);
+  const ts = (a.tasks || []).map(byId).filter(Boolean);
+  const w = ['received', 'not needed'].includes(a.status) ? null : byWhen(a.by, a.badge);
+  const decision = a.kind === 'decision';
   const st = a.status === 'received' ? icon('done') : ['asked', 'waiting'].includes(a.status) ? icon('wait') : icon('todo');
-  let h = `<div class="p-eye">${svg('key', 'ic')}Access we need</div><h3>${esc(a.item)}</h3>
-    <dl class="props"><div><dt>Status</dt><dd>${st}${esc(ACCESS[a.status] || 'Coming up')}</dd></div>${a.by ? `<div><dt>Needed by</dt><dd>${fmtW(a.by)}${w && w.cls === 'late' ? ' <span style="color:var(--bad)">· overdue</span>' : ''}</dd></div>` : ''}<div><dt>Who</dt><dd>${esc(a.from)}</dd></div></dl>`;
+  const stText = ['asked', 'waiting'].includes(a.status) && (a.badge || a.waitingOn) ? a.badge || `Waiting on ${a.waitingOn}` : ACCESS[a.status] || 'Coming up';
+  let h = `<div class="p-eye">${svg(decision ? 'pen' : 'key', 'ic')}${decision ? 'Decision we need' : 'Access we need'}</div><h3>${esc(a.item)}</h3>
+    <dl class="props"><div><dt>Status</dt><dd>${st}${esc(stText)}</dd></div>${a.by ? `<div><dt>Needed by</dt><dd>${fmtW(a.by)}${w && w.cls === 'late' ? ' <span style="color:var(--bad)">· overdue</span>' : ''}</dd></div>` : ''}<div><dt>Who</dt><dd>${esc(a.from)}</dd></div></dl>`;
   if (a.sign) h += signCard(a.sign);
-  if (a.why) h += `<div class="blk"><h4>Why I need it</h4><p>${esc(a.why)}</p></div>`;
-  h += `<div class="blk"><h4>How to give it</h4>${a.howTo.length ? `<ol class="ol">${a.howTo.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : `<p>${esc(a.how)}</p>`}</div>`;
-  h += `<div class="note info"><h4>Safe sharing</h4><p>Please send invitations rather than passwords. Passwords and keys never go by WhatsApp, email or these comments, and any access can be removed at any time.</p></div>`;
+  if (a.why) h += `<div class="blk"><h4>${decision ? 'Why it matters' : 'Why I need it'}</h4><p>${esc(a.why)}</p></div>`;
+  const howTo = a.howTo || [];
+  h += `<div class="blk"><h4>${decision ? 'How to answer' : 'How to give it'}</h4>${howTo.length ? `<ol class="ol">${howTo.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : `<p>${esc(a.how)}</p>`}</div>`;
+  if (!decision) h += `<div class="note info"><h4>Safe sharing</h4><p>Please send invitations rather than passwords. Passwords and keys never go by WhatsApp, email or these comments, and any access can be removed at any time.</p></div>`;
   if (ts.length) h += `<div class="blk"><h4>Used for</h4><div class="chips">${ts.map(chip).join('')}</div></div>`;
   return h + commentsHtml(`access:${a.id}`, accessOk(a));
 }
 function vPhase(p) {
   const x = phaseInfo(p, C), i = B.phases.indexOf(p), pc = x.ts.length ? Math.round((x.dn / x.ts.length) * 100) : 0;
   let h = `<div class="p-eye"><span class="dot" style="background:${p.color}"></span>Phase ${i + 1} of ${B.phases.length}</div><h3>${esc(p.name)}</h3>
-    <dl class="props"><div><dt>Status</dt><dd>${x.tag}</dd></div><div><dt>Dates</dt><dd>${fmtW(p.start)} → ${fmtW(p.end)}</dd></div><div><dt>Progress</dt><dd><span class="bar"><i style="width:${pc}%"></i></span><span>${x.dn} of ${x.ts.length} tasks</span></dd></div></dl>`;
+    <dl class="props"><div><dt>Status</dt><dd>${x.tag}</dd></div>${p.window || dateless() ? `<div><dt>Stage</dt><dd>${esc(p.window || '')}</dd></div>` : `<div><dt>Dates</dt><dd>${fmtW(p.start)} → ${fmtW(p.end)}</dd></div>`}<div><dt>Progress</dt><dd><span class="bar"><i style="width:${pc}%"></i></span><span>${x.dn} of ${x.ts.length} tasks</span></dd></div></dl>`;
   if (p.summary) h += `<div class="blk"><h4>About this phase</h4><p>${esc(p.summary)}</p></div>`;
   if (p.outcome) h += `<div class="note good"><h4>Goal</h4><p>${esc(p.outcome)}</p></div>`;
-  h += `<p class="p-sub">Tasks · ${x.ts.length}</p><div class="p-list">${x.ts.map(taskRow).join('')}</div>`;
+  if (x.ts.some((t) => t.milestone)) {
+    // Group under milestone subheadings, in plan order (first appearance).
+    const groups = [];
+    x.ts.forEach((t) => { const k = t.milestone || 'Other tasks'; let g = groups.find((q) => q.k === k); if (!g) groups.push((g = { k, ts: [] })); g.ts.push(t); });
+    h += groups.map((g) => `<p class="p-sub">${esc(g.k)} · ${g.ts.length}</p><div class="p-list">${g.ts.map(taskRow).join('')}</div>`).join('');
+  } else h += `<p class="p-sub">Tasks · ${x.ts.length}</p><div class="p-list">${x.ts.map(taskRow).join('')}</div>`;
   return h + commentsHtml(`phase:${p.id}`, false, 'Comments on this phase');
 }
 function vNeeds() {
   const sec = (title, list, tone, empty) => `<p class="p-sub">${title}</p>${list.length ? `<div class="p-list">${list.map((n) => needRow(n, tone)).join('')}</div>` : `<p class="p-empty">${empty}</p>`}`;
+  if (dateless()) {
+    const on = (name) => C.needNow.filter((n) => n.wo === name);
+    const ay = on('Ayesha'), la = on('Lalit'), other = C.needNow.filter((n) => !['Ayesha', 'Lalit'].includes(n.wo));
+    return `<div class="p-eye">${svg('list', 'ic')}Waiting on</div><h3>What we're waiting on</h3>
+    <p class="p-empty" style="color:var(--ink2)">Tap any item to see why it's needed and exactly how to give it. Ayesha covers access and assets; Lalit has four decisions only, batched into one message or one short call.</p>
+    ${sec(`Waiting on Ayesha · ${ay.length}`, ay, '', 'Nothing waiting on Ayesha right now. Thank you!')}
+    ${sec(`Waiting on Lalit · ${la.length}`, la, '', 'No decisions waiting on Lalit right now. Thank you!')}
+    ${other.length ? sec(`Also waiting · ${other.length}`, other, '', '') : ''}
+    ${C.needDone.length ? sec(`Received · ${C.needDone.length}`, C.needDone, 'done', '') : ''}`;
+  }
   return `<div class="p-eye">${svg('list', 'ic')}Needed from you</div><h3>Everything we need from you</h3>
     <p class="p-empty" style="color:var(--ink2)">Tap any item to see why it's needed and exactly how to give it. This covers the next three weeks.</p>
     ${sec(`Waiting on you now · ${C.needNow.length}`, C.needNow, '', 'Nothing right now. Thank you!')}
@@ -1205,11 +1271,11 @@ function vDocs() {
   const docs = B.documents || [];
   return `<div class="p-eye">${svg('doc', 'ic')}Documents</div><h3>Documents</h3>
     <p class="p-empty" style="color:var(--ink2)">The key documents for the project. Tap one to open it as a page, or to see where it stands.</p>
-    ${docs.length ? `<div class="p-list">${docs.map((d) => `<button class="row" data-doc="${d.id}"><span class="kind doc">${svg('doc')}</span><span class="row-t">${esc(d.title)}<small>${fmt(d.date)}<span class="m-when"> · ${esc(docStatusText(d))}</span></small></span><span class="when"><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span></span>${ccHtml(countFor([`doc:${d.id}`]))}${svg('chev', 'chev')}</button>`).join('')}</div>` : '<p class="p-empty">No documents yet.</p>'}`;
+    ${docs.length ? `<div class="p-list">${docs.map((d) => `<button class="row" data-doc="${d.id}"><span class="kind doc">${svg('doc')}</span><span class="row-t">${esc(d.title)}<small>${d.date ? fmt(d.date) : esc(d.period || '')}<span class="m-when"> · ${esc(docStatusText(d))}</span></small></span><span class="when"><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span></span>${ccHtml(countFor([`doc:${d.id}`]))}${svg('chev', 'chev')}</button>`).join('')}</div>` : '<p class="p-empty">No documents yet.</p>'}`;
 }
 function vDoc(d) {
   let h = `<div class="p-eye">${svg('doc', 'ic')}Document</div><h3>${esc(d.title)}</h3>
-    <dl class="props"><div><dt>Status</dt><dd><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span></dd></div><div><dt>Date</dt><dd>${fmtW(d.date)}</dd></div></dl>`;
+    <dl class="props"><div><dt>Status</dt><dd><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span></dd></div>${d.date ? `<div><dt>Date</dt><dd>${fmtW(d.date)}</dd></div>` : d.period ? `<div><dt>Period</dt><dd>${esc(d.period)}</dd></div>` : ''}</dl>`;
   if (d.sign) h += signCard(d.id);
   if (d.summary) h += `<div class="blk"><h4>What it covers</h4><p>${esc(d.summary)}</p></div>`;
   if (docReadable(d)) h += `<div class="action-b" style="margin:0 0 22px"><button class="btn" data-read-page="${d.id}">Read the page</button></div>`;
@@ -1287,12 +1353,12 @@ function openRead(id, keepScroll) {
   readId = id;
   const el = $('#read');
   const pages = [...(B.documents || []).filter(docReadable), ...libraryDocs().filter(docReadable)];
-  const side = pages.map((p) => `<button class="read-item${p.id === d.id ? ' on' : ''}" data-read-page="${esc(p.id)}"><b>${esc(p.title)}</b><small>${esc(docStatusText(p))} · ${fmt(p.date)}</small></button>`).join('');
+  const side = pages.map((p) => `<button class="read-item${p.id === d.id ? ' on' : ''}" data-read-page="${esc(p.id)}"><b>${esc(p.title)}</b><small>${esc(docStatusText(p))}${p.date ? ` · ${fmt(p.date)}` : p.period ? ` · ${esc(p.period)}` : ''}</small></button>`).join('');
   const picks = pages.map((p) => `<button class="read-chip${p.id === d.id ? ' on' : ''}" data-read-page="${esc(p.id)}">${esc(p.title)}</button>`).join('');
   el.innerHTML = `<div class="read-top"><button class="p-btn" data-read-close aria-label="Close">${svg('x')}</button><span class="read-name">${svg('doc')}Documents</span><span class="read-sp"></span>${d.sign ? `<button class="btn" data-sign="${esc(d.id)}">Review and sign</button>` : ''}</div>
     <div class="read-wrap"><aside class="read-side"><p class="read-side-t">Pages</p><div class="read-list">${side}</div></aside>
     <div class="read-scroll"><article class="read-doc">
-      <div class="read-meta"><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span><span>${fmtW(d.date)}</span><span>From ${esc(lead())}</span></div>
+      <div class="read-meta"><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span>${d.date ? `<span>${fmtW(d.date)}</span>` : d.period ? `<span>${esc(d.period)}</span>` : ''}<span>From ${esc(lead())}</span></div>
       <h1>${esc(d.title)}</h1>
       ${d.summary ? `<p class="read-sum">${esc(d.summary)}</p>` : ''}
       <div class="read-picks">${picks}</div>
