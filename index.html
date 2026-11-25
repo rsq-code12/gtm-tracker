@@ -14,6 +14,7 @@
     --bg:#FBFBFA; --surface:#FFFFFF; --hover:#F6F6F4; --ink:#0F1115; --ink2:#414854; --muted:#737B87; --faint:#A6ACB5;
     --line:#EBEBE8; --line2:#F2F2EF; --track:#EEEEEB;
     --accent:#2F5BEA; --accentSoft:#EEF2FE; --good:#12805C; --goodSoft:#E9F5EF; --warn:#B45309; --warnSoft:#FDF4E7; --bad:#C2410C; --badSoft:#FDEDE6;
+    --hot:#EA580C; --hot2:#DB2777; --hotSoft:#FFF1E7; --hotGlow:rgba(234,88,12,.07);
     --sans:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
@@ -21,6 +22,7 @@
       --bg:#0B0C0F; --surface:#121418; --hover:#181B20; --ink:#ECEEF2; --ink2:#C2C7D0; --muted:#8A919C; --faint:#5E6570;
       --line:#22252C; --line2:#1B1E24; --track:#22262D;
       --accent:#7D9BFF; --accentSoft:#1A2140; --good:#47C58F; --goodSoft:#10241B; --warn:#F2B25C; --warnSoft:#2A2012; --bad:#F38B69; --badSoft:#2C1812;
+      --hot:#FB8A4C; --hot2:#F472B6; --hotSoft:#2B1A10; --hotGlow:rgba(251,138,76,.08);
     }
   }
   * { box-sizing: border-box; }
@@ -313,6 +315,137 @@
     .rh { grid-template-columns: 1fr; gap: 0; }
     .cmp-b span { display: none; } .cmp-b.rec span, .cmp-b.ok.armed span, .cmp-b.keep span { display: inline; }
   }
+  /* Hot right now: latest moves, each card shown for 3 days, then gone. From the Alurei tracker. */
+  @property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+  .hot-rail { display: none; }
+  .hot-h { display: flex; align-items: center; gap: 12px; }
+  .hot-h > div { min-width: 0; flex: 1; }
+  .hot-h b { display: block; font-size: 15.5px; font-weight: 650; letter-spacing: -.015em; }
+  .hot-h small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .hot-flame { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; flex: none; color: #fff; background: linear-gradient(140deg, var(--hot), var(--hot2)); box-shadow: 0 8px 18px -8px var(--hot); }
+  .hot-flame svg { width: 19px; height: 19px; transform-origin: 50% 85%; animation: flicker 2.6s ease-in-out infinite; }
+  .hot-flame.calm { background: var(--track); color: var(--faint); box-shadow: none; } .hot-flame.calm svg { animation: none; }
+  .hot-n { flex: none; font-size: 12px; font-weight: 650; padding: 4px 10px; border-radius: 99px; background: var(--hotSoft); color: var(--hot); }
+  .hot-n.quiet { background: var(--track); color: var(--muted); }
+  .hot-list { display: grid; gap: 10px; margin-top: 18px; }
+  .hc { position: relative; display: grid; gap: 9px; width: 100%; padding: 14px 15px 12px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(15,17,21,.04); transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s, border-color .2s; }
+  .hc:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -18px rgba(15,17,21,.35); border-color: var(--faint); }
+  .hc-top { display: flex; align-items: center; gap: 7px; font-size: 12px; min-width: 0; }
+  .hc-kind { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 3px 6px; border-radius: 99px; font-weight: 600; background: var(--kSoft); color: var(--k); white-space: nowrap; }
+  .hc-kind svg { width: 13px; height: 13px; }
+  .hc-hot { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px 3px 6px; border-radius: 99px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: linear-gradient(110deg, var(--hot) 0%, var(--hot2) 45%, var(--hot) 90%); background-size: 220% 100%; animation: shimmer 3.2s linear infinite; }
+  .hc-hot svg { width: 11px; height: 11px; }
+  .hc time { margin-left: auto; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .hc-t { font-size: 14px; line-height: 1.5; color: var(--ink2); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .hc-t b { color: var(--ink); font-weight: 600; }
+  .hc-sub { font-size: 12.5px; color: var(--muted); margin-top: -5px; }
+  .hc-link { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 7px 10px; border-radius: 10px; background: var(--hover); font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .hc-link svg { width: 14px; height: 14px; color: var(--k); }
+  .hc-link span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hc-link svg:last-child { width: 12px; height: 12px; color: var(--faint); transition: transform .2s, color .2s; }
+  .hc:hover .hc-link svg:last-child { color: var(--ink); transform: translateX(2px); }
+  .hc-foot { display: flex; align-items: center; gap: 10px; }
+  .hc-life { flex: 1; height: 3px; border-radius: 3px; background: var(--track); overflow: hidden; }
+  .hc-life i { display: block; height: 100%; border-radius: 3px; background: var(--k); opacity: .75; }
+  .hc-foot small { font-size: 11.5px; color: var(--faint); white-space: nowrap; }
+  .k-update { --k: var(--accent); --kSoft: var(--accentSoft); }
+  .k-done { --k: var(--good); --kSoft: var(--goodSoft); }
+  .k-start { --k: var(--warn); --kSoft: var(--warnSoft); }
+  .k-doc { --k: var(--ink2); --kSoft: var(--track); }
+  .hc.hottest { border: 1.5px solid transparent; background: linear-gradient(var(--surface), var(--surface)) padding-box, conic-gradient(from var(--ang), var(--hot), var(--hot2), var(--accent), var(--hot)) border-box; box-shadow: 0 16px 34px -22px var(--hot); animation: spin 7s linear infinite; }
+  .hc.hottest .hc-t { color: var(--ink); -webkit-line-clamp: 6; }
+  .hc-dot { display: none; width: 7px; height: 7px; border-radius: 50%; background: var(--hot); flex: none; animation: ping 2s ease-out infinite; transition: opacity .6s, transform .6s; }
+  .hc.unseen .hc-dot { display: block; } .hc.seen .hc-dot { opacity: 0; transform: scale(.4); }
+  .hc.unseen time { color: var(--ink2); }
+  .hc.enter { animation: hotIn .6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 80ms); }
+  .hc.hottest.enter { animation: hotIn .6s cubic-bezier(.2,.8,.2,1) both, spin 7s linear infinite; animation-delay: calc(var(--i) * 80ms), 0s; }
+  .hc.fresh { animation: hotIn .6s cubic-bezier(.2,.8,.2,1) both, freshGlow 2.4s ease-out .3s 2; }
+  .hc.hottest.fresh { animation: hotIn .6s cubic-bezier(.2,.8,.2,1) both, freshGlow 2.4s ease-out .3s 2, spin 7s linear infinite; }
+  .hot-all { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 14px; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: 500; color: var(--muted); border: 1px dashed var(--line); }
+  .hot-all:hover { color: var(--ink); border-color: var(--faint); }
+  .hot-all svg { width: 13px; height: 13px; }
+  .hot-empty { margin-top: 26px; padding: 26px 18px; border-radius: 16px; border: 1px dashed var(--line); text-align: center; display: grid; justify-items: center; gap: 8px; }
+  .hot-empty b { font-size: 14.5px; } .hot-empty p { margin: 0; font-size: 13px; color: var(--muted); max-width: 250px; }
+  .hot-note { margin-top: auto; padding-top: 22px; font-size: 11.5px; color: var(--faint); line-height: 1.6; }
+  .hot-strip { margin: 0 0 6px; }
+  .hot-row { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 20px; margin: 14px -20px 0; padding: 4px 20px 10px; scrollbar-width: none; }
+  .hot-row::-webkit-scrollbar { display: none; }
+  .hot-row .hc { flex: 0 0 min(84%, 340px); scroll-snap-align: start; align-content: start; }
+  .hot-row .hc.hottest .hc-t { -webkit-line-clamp: 4; }
+  @keyframes hotIn { from { opacity: 0; transform: translateX(28px) scale(.97); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+  @keyframes spin { to { --ang: 360deg; } }
+  @keyframes shimmer { to { background-position: -220% 0; } }
+  @keyframes flicker { 0%, 100% { transform: rotate(-3deg) scale(1); } 50% { transform: rotate(3deg) scale(1.08); } }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(234,88,12,.5); } 100% { box-shadow: 0 0 0 7px rgba(234,88,12,0); } }
+  @keyframes freshGlow { 0% { box-shadow: 0 0 0 0 rgba(234,88,12,.35); } 100% { box-shadow: 0 0 0 14px rgba(234,88,12,0); } }
+  @media (max-width: 640px) { .hot-row { margin: 14px -16px 0; padding: 4px 16px 10px; scroll-padding-inline: 16px; } }
+  @media (min-width: 1180px) {
+    .shell { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 30vw, 460px); align-items: start; }
+    .page { min-width: 0; }
+    .hot-rail { display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; scrollbar-width: thin; padding: 24px 22px 22px; border-left: 1px solid var(--line); background: linear-gradient(180deg, var(--hotGlow), transparent 320px), var(--surface); }
+    .hot-strip { display: none; }
+  }
+
+  /* Document pages: full-screen reader, same block language as the Alurei library pages. */
+  .read { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: none; flex-direction: column; }
+  .read.on { display: flex; }
+  .read-top { flex: none; display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid var(--line); background: var(--surface); min-height: 54px; }
+  .read-name { display: inline-flex; align-items: center; gap: 7px; font-size: 14.5px; font-weight: 600; }
+  .read-name svg { width: 16px; height: 16px; color: var(--muted); }
+  .read-sp { flex: 1; }
+  .read-top .btn { height: 34px; padding: 0 14px; font-size: 13.5px; }
+  .read-wrap { flex: 1; min-height: 0; display: block; }
+  .read-side { display: none; }
+  .read-scroll { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .read-doc { max-width: 800px; margin: 0 auto; padding: 32px 28px 80px; }
+  .read-meta { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .read-doc > h1 { font-size: clamp(28px, 4vw, 36px); line-height: 1.15; letter-spacing: -.03em; margin: 0 0 10px; }
+  .read-sum { font-size: 17px; line-height: 1.55; color: var(--ink2); margin: 0 0 18px; }
+  .read-picks { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 0 18px; padding-bottom: 2px; }
+  .read-picks::-webkit-scrollbar { display: none; }
+  .read-chip { flex: none; padding: 6px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 500; color: var(--ink2); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .read-chip.on { background: var(--accentSoft); border-color: transparent; color: var(--accent); }
+  .read-toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 22px; }
+  .read-toc a { font-size: 13px; font-weight: 500; color: var(--ink2); text-decoration: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); }
+  .read-toc a:hover { border-color: var(--ink2); color: var(--ink); }
+  .read-body { font-size: 15.5px; line-height: 1.65; color: var(--ink2); }
+  .read-body h2 { font-size: 22px; line-height: 1.3; letter-spacing: -.02em; color: var(--ink); font-weight: 650; margin: 28px 0 8px; scroll-margin-top: 12px; }
+  .read-body h3 { font-size: 17px; line-height: 1.35; color: var(--ink); font-weight: 600; margin: 20px 0 6px; }
+  .read-body p { margin: 0 0 12px; }
+  .read-body ul, .read-body ol { margin: 0 0 14px; padding-left: 22px; }
+  .read-body li { margin: 0 0 6px; }
+  .read-body strong, .read-body b { color: var(--ink); }
+  .read-body a { color: var(--accent); overflow-wrap: anywhere; }
+  .read-body hr { border: 0; border-top: 1px solid var(--line); margin: 26px 0; }
+  .read-body pre { overflow-x: auto; padding: 12px 14px; background: var(--hover); border-radius: 12px; font-size: 12.5px; line-height: 1.5; }
+  .read-body code { font-size: .92em; }
+  .read-tw, .lib-tw { overflow-x: auto; margin: 12px 0 18px; border: 1px solid var(--line); border-radius: 12px; -webkit-overflow-scrolling: touch; background: var(--surface); }
+  .read-t, .lib-t { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14px; line-height: 1.5; display: table; }
+  .read-t th, .read-t td, .lib-t th, .lib-t td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .read-t thead th, .lib-t thead th { background: var(--hover); color: var(--ink); font-weight: 650; }
+  .read-t tbody th, .lib-t tbody th { font-weight: 600; color: var(--ink); }
+  .read-t tr:last-child th, .read-t tr:last-child td, .lib-t tr:last-child th, .lib-t tr:last-child td { border-bottom: 0; }
+  .lib-body .note { margin: 14px 0; }
+  .lib-body .note p { margin: 0; }
+  .lib-body .note ol, .lib-body .note ul { margin: 8px 0 0; }
+  .lib-act { margin: 8px 0 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .lib-act .btn { display: inline-flex; align-items: center; gap: 8px; }
+  .lib-act svg { width: 16px; height: 16px; }
+  .read-doc .action { margin-top: 8px; }
+  .read-side-t { margin: 16px 14px 6px; font-size: 11.5px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .read-list { overflow-y: auto; padding: 0 8px 24px; display: grid; align-content: start; gap: 2px; }
+  .read-item { display: block; width: 100%; text-align: left; padding: 9px 10px; border-radius: 9px; color: var(--ink); }
+  .read-item:hover { background: var(--hover); }
+  .read-item.on { background: var(--accentSoft); }
+  .read-item b { display: block; font-size: 14px; font-weight: 550; }
+  .read-item small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  @media (min-width: 900px) {
+    .read-wrap { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 0; }
+    .read-side { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
+    .read-picks { display: none; }
+    .read-doc { padding: 40px 48px 90px; }
+  }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -320,6 +453,7 @@
 <div id="app"><div class="msg-page"><h1>Loading…</h1><p>Getting the latest progress.</p></div></div>
 <div class="scrim" id="scrim"></div>
 <aside class="panel" id="panel" role="dialog" aria-modal="true" aria-hidden="true"></aside>
+<section class="read" id="read" aria-label="Document" aria-hidden="true"></section>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 'use strict';
@@ -355,6 +489,8 @@ const P = {
   chat: '<path d="M4 5.6A1.6 1.6 0 0 1 5.6 4h8.8A1.6 1.6 0 0 1 16 5.6v5.8a1.6 1.6 0 0 1-1.6 1.6H9.2L6 16v-3H5.6A1.6 1.6 0 0 1 4 11.4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
   image: '<rect x="3" y="4" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="7.5" cy="8.3" r="1.4" fill="currentColor"/><path d="M3.5 14.5l4.2-4 3 2.8 2.3-2 3.5 3.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
   mic: '<rect x="7.3" y="2.8" width="5.4" height="9" rx="2.7" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.6 9.6a5.4 5.4 0 0 0 10.8 0M10 15v2.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  flame: '<path d="M10.2 2.2c.5 2.6 2.4 3.9 3.7 5.6a5.9 5.9 0 0 1 1.3 3.8 5.2 5.2 0 0 1-10.4.2c0-2 .9-3.5 2.2-4.6.1 1.4.7 2.4 1.7 2.9-.4-2.8.4-5.6 1.5-7.9z" fill="currentColor"/><path d="M10 17.2a2.4 2.4 0 0 1-2.4-2.5c0-1.2.8-2 1.6-2.7.1.7.4 1.2 1 1.4.1-1 .5-1.8 1.1-2.4.6 1 1.1 2 1.1 3.3a2.4 2.4 0 0 1-2.4 2.9z" fill="#fff" opacity=".55"/>',
+  spark: '<path d="M10 2.8l1.6 4.2 4.2 1.6-4.2 1.6L10 14.4l-1.6-4.2-4.2-1.6 4.2-1.6zM15.2 13.2l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor"/>',
 };
 const svg = (n, c = '') => `<svg class="${c}" viewBox="0 0 20 20" aria-hidden="true">${P[n]}</svg>`;
 
@@ -471,7 +607,7 @@ function commentsHtml(key, canApprove, title = 'Comments') {
   return `<div class="cm" data-cm="${key}"><h4>${title}</h4><div class="cm-list">${threadHtml(key)}</div>${composerHtml(key)}</div>`;
 }
 function paintComposer(key) { const el = document.querySelector(`.cmp[data-key="${CSS.escape(key)}"]`); if (el) el.outerHTML = composerHtml(key); }
-function paintThreads() { document.querySelectorAll('#panel .cm[data-cm]').forEach((el) => { $('.cm-list', el).innerHTML = threadHtml(el.dataset.cm); }); }
+function paintThreads() { document.querySelectorAll('#panel .cm[data-cm], #read .cm[data-cm]').forEach((el) => { $('.cm-list', el).innerHTML = threadHtml(el.dataset.cm); }); }
 const composing = () => !!rec || !!FB.sending || Object.values(drafts).some((d) => d.text.trim() || d.files.length) || !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.cmp'));
 
 function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
@@ -608,7 +744,7 @@ function openSign(docId, viewOnly) {
   document.body.appendChild(SIGN.el); document.body.style.overflow = 'hidden';
   paintSign();
 }
-function closeSign() { if (SIGN.el) SIGN.el.remove(); SIGN.el = null; if (!ui.stack.length) document.body.style.overflow = ''; }
+function closeSign() { if (SIGN.el) SIGN.el.remove(); SIGN.el = null; if (!ui.stack.length && !readId) document.body.style.overflow = ''; }
 function withSignature(html, highlight) {
   const w = document.createElement('div'); w.innerHTML = html;
   const first = (rows, l) => rows.find((r) => r.cells[0] && r.cells[0].textContent.trim().toLowerCase() === l);
@@ -755,7 +891,8 @@ async function signAction(a) {
 /* ---------- Model ---------- */
 const byId = (id) => B.tasks.find((t) => t.id === id);
 const accessById = (id) => B.access.find((a) => a.id === id);
-const docById = (id) => (B.documents || []).find((d) => d.id === id);
+const libraryDocs = () => (B.library || []).filter((p) => p && p.id && p.title).map((p) => ({ id: `lib-${p.id}`, title: p.title, date: p.updated || '', status: 'Guide', summary: p.summary || '', blocks: p.blocks || [], sign: false }));
+const docById = (id) => (B.documents || []).find((d) => d.id === id) || libraryDocs().find((d) => d.id === id);
 const qById = (id) => (B.questions || []).find((q) => q.id === id);
 const qReplies = (key) => (FB.on ? thread(key).filter((m) => m.role === 'client' && m.kind !== 'due') : []);
 const answeredAll = () => qReplies('q:all').length > 0;
@@ -771,8 +908,16 @@ const byBy = (a, b) => (a.by || '9999').localeCompare(b.by || '9999');
 const needsOk = (t) => t.status !== 'done' && (t.info.need || []).some((n) => /approv|\bOK\b|\bgo\b|decision|agree/i.test(n));
 const accessOk = (a) => !['received', 'not needed'].includes(a.status) && /\bOK\b|agree|approved/i.test(`${a.how} ${(a.howTo || []).join(' ')}`);
 
+// Dateless mode (B.meta.dateless): work is grouped into stage windows ("Month 1", "Month 2") and ordered steps, with no calendar dates.
+const dateless = () => !!(B && B.meta && B.meta.dateless);
 function state(t) {
   if (t.status === 'done') return { k: 'done', label: 'Done' };
+  if (t.waitingOn) return { k: 'wait', label: 'Waiting on ' + t.waitingOn };
+  if (dateless() || !t.due) {
+    if (t.status === 'waiting') return { k: 'wait', label: 'Waiting' };
+    if (t.status === 'doing') return { k: 'doing', label: 'In progress' };
+    return { k: 'todo', label: 'Not started' };
+  }
   const team = TEAM.includes(t.owner);
   if (t.due < today) return { k: 'late', label: team ? 'Needed now' : 'Running late' };
   if (t.status === 'waiting') return { k: 'wait', label: 'Waiting' };
@@ -781,6 +926,12 @@ function state(t) {
   return { k: 'todo', label: 'Not started' };
 }
 function when(t) {
+  if (dateless() || !t.due) {
+    if (t.status === 'done') return { text: 'Done', cls: 'done' };
+    if (t.waitingOn) return { text: 'Waiting on ' + t.waitingOn, cls: 'soon' };
+    if (t.status === 'doing') return { text: 'In progress', cls: '' };
+    return { text: t.milestoneShort || 'Queued', cls: '' };
+  }
   if (t.status === 'done') return { text: t.doneOn ? `Done ${fmt(t.doneOn)}` : 'Done', cls: 'done' };
   const s = diff(today, t.start), d = diff(today, t.due);
   if (s > 0) return { text: s === 1 ? 'Starts tomorrow' : s < 7 ? `Starts ${dayName(t.start)}` : `Starts ${fmt(t.start)}`, cls: '' };
@@ -790,8 +941,8 @@ function when(t) {
   if (d < 7) return { text: `Due ${dayName(t.due)}`, cls: '' };
   return { text: `Due ${fmt(t.due)}`, cls: '' };
 }
-function byWhen(by) {
-  if (!by) return { text: '', cls: '' };
+function byWhen(by, badge) {
+  if (!by) return { text: badge || '', cls: badge ? 'soon' : '' };
   const d = diff(today, by);
   if (d < 0) return { text: `Was due ${fmt(by)}`, cls: 'late' };
   if (d === 0) return { text: 'Needed today', cls: 'soon' };
@@ -822,16 +973,24 @@ function compute() {
   const done = tasks.filter((t) => t.status === 'done');
   const open = tasks.filter((t) => t.status !== 'done');
   const pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
-  const linked = new Set(B.access.flatMap((a) => a.tasks));
-  const aItem = (a) => ({ kind: 'access', id: a.id, icon: 'key', title: a.item, sub: 'Access', by: a.by });
-  const tItem = (t, sub, ic) => ({ kind: 'task', id: t.id, icon: ic, title: t.title, sub, by: t.due });
+  const dl = !!M.dateless;
+  const linked = new Set(B.access.flatMap((a) => a.tasks || []));
+  const aItem = (a) => ({ kind: 'access', id: a.id, icon: a.kind === 'decision' ? 'pen' : 'key', title: a.item, sub: dl && a.from ? `From ${a.from}` : 'Access', by: a.by, badge: a.badge || (a.waitingOn ? `Waiting on ${a.waitingOn}` : ''), wo: a.waitingOn || '', order: a.order });
+  const tItem = (t, sub, ic) => ({ kind: 'task', id: t.id, icon: ic, title: t.title, sub, by: t.due, badge: t.waitingOn ? `Waiting on ${t.waitingOn}` : '', wo: t.waitingOn || '' });
   const team = tasks.filter((t) => TEAM.includes(t.owner) && !linked.has(t.id));
-  const inputs = open.filter((t) => t.owner === 'lead' && t.info.need.length && !linked.has(t.id));
+  const inputs = open.filter((t) => t.owner === 'lead' && (t.info.need || []).length && !linked.has(t.id) && !t.waitingOn);
   const fromTeam = (t) => (t.owner === 'client' ? 'From your team' : `From ${who(t.owner)}`);
-  const needNow = [
+  // Tasks waiting on a named person, unless an access item already covers them (so nothing shows twice).
+  const waitingOn = open.filter((t) => t.waitingOn && !linked.has(t.id)).map((t) => tItem(t, phaseOf(t.phase).name, 'user'));
+  const byOrder = (a, b) => (a.order ?? 999) - (b.order ?? 999);
+  const needNow = dl ? [
+    ...B.access.filter((a) => ['asked', 'waiting'].includes(a.status)).map(aItem).sort(byOrder),
+    ...waitingOn,
+  ] : [
     ...B.access.filter((a) => ['asked', 'waiting'].includes(a.status)).map(aItem),
-    ...team.filter((t) => t.status !== 'done' && (t.start <= addDays(today, 3) || t.status === 'waiting')).map((t) => tItem(t, fromTeam(t), 'user')),
+    ...team.filter((t) => t.status !== 'done' && !t.waitingOn && (t.start <= addDays(today, 3) || t.status === 'waiting')).map((t) => tItem(t, fromTeam(t), 'user')),
     ...inputs.filter((t) => t.status === 'waiting').map((t) => tItem(t, 'Your input', 'pen')),
+    ...waitingOn,
   ].sort(byBy);
   const qOpen = (B.questions || []).filter((q) => !answered(q.id));
   if (qOpen.length) needNow.unshift({ kind: 'view', id: 'questions', icon: 'chat', title: B.questionsTitle || 'Questions for you', sub: `Your input · ${qOpen.length} to answer`, by: qDue() });
@@ -848,13 +1007,13 @@ function compute() {
   ];
   const leadLate = open.filter((t) => t.owner === 'lead' && t.due < today);
   const teamLate = needNow.filter((n) => n.by && n.by < today);
-  const launched = today >= M.launch;
-  const health = launched ? { label: 'Live', tone: '' } : leadLate.length ? { label: 'Catching up', tone: 'warn' } : teamLate.length ? { label: 'Waiting on a few inputs', tone: 'warn' } : { label: 'On track', tone: '' };
+  const launched = !dl && !!M.launch && today >= M.launch;
+  const health = dl || !M.launch ? { label: needNow.length ? 'Waiting on inputs' : 'Active', tone: needNow.length ? 'warn' : '' } : launched ? { label: 'Live', tone: '' } : leadLate.length ? { label: 'Catching up', tone: 'warn' } : teamLate.length ? { label: 'Waiting on a few inputs', tone: 'warn' } : { label: 'On track', tone: '' };
   const feed = [
-    ...B.updates.map((u) => ({ date: u.date, kind: 'update', text: u.text })),
+    ...B.updates.map((u) => { const r = refOpen(u.ref); return { date: u.date, label: u.label, kind: 'update', text: u.text, refAttr: r ? r.attr : '' }; }),
     ...done.filter((t) => t.doneOn).map((t) => ({ date: t.doneOn, kind: 'done', id: t.id, text: t.title })),
     ...tasks.filter((t) => t.startedOn && t.status !== 'done').map((t) => ({ date: t.startedOn, kind: 'start', id: t.id, text: t.title })),
-  ].sort((a, b) => b.date.localeCompare(a.date) || (a.kind === 'update' ? -1 : 1));
+  ].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || (a.kind === 'update' ? -1 : 1));
   const nextMs = (B.milestones || []).map(byId).filter(Boolean).find((t) => t.status !== 'done');
   return { qOpen, M, tasks, done, open, pct, needNow, needSoon, needDone, health, launched, feed, nextMs };
 }
@@ -865,42 +1024,146 @@ function taskRow(t) {
   return `<button class="row" data-task="${t.id}">${icon(state(t).k)}<span class="row-t">${esc(t.title)}<small class="m-when ${w.cls}">${w.text}</small></span><span class="when ${w.cls}">${w.text}</span>${ccHtml(countFor([`task:${t.id}`]))}${svg('chev', 'chev')}</button>`;
 }
 function needRow(n, tone = '') {
-  const w = tone === 'done' ? { text: 'Received', cls: 'done' } : byWhen(n.by);
+  const w = tone === 'done' ? { text: 'Received', cls: 'done' } : byWhen(n.by, n.badge);
   const attr = n.kind === 'access' ? `data-access="${n.id}"` : n.kind === 'view' ? `data-view="${n.id}"` : `data-task="${n.id}"`;
   return `<button class="row" ${attr}><span class="kind ${tone}">${svg(tone === 'done' ? 'check' : n.icon)}</span><span class="row-t">${esc(n.title)}<small>${esc(n.sub)}<span class="m-when ${w.cls}"> · ${w.text}</span></small></span><span class="when ${w.cls}">${w.text}</span>${ccHtml(countFor([`${n.kind}:${n.id}`]))}${svg('chev', 'chev')}</button>`;
 }
 function feedRow(f) {
   const label = f.kind === 'done' ? '<em class="done">Done</em> ' : f.kind === 'start' ? '<em>Started</em> ' : '';
-  const tag = f.id ? 'button' : 'div';
-  return `<${tag} class="up" ${f.id ? `data-task="${f.id}"` : ''}><time>${f.date === today ? 'Today' : fmt(f.date)}</time><span>${label}${esc(f.text)}</span></${tag}>`;
+  const attr = f.refAttr || (f.id ? `data-task="${f.id}"` : '');
+  const tag = attr ? 'button' : 'div';
+  return `<${tag} class="up" ${attr}><time>${esc(f.label || (f.date === today ? 'Today' : fmt(f.date)))}</time><span>${label}${esc(f.text)}</span></${tag}>`;
 }
 function phaseInfo(p, c) {
-  const ts = c.tasks.filter((t) => t.phase === p.id).sort((a, b) => a.start.localeCompare(b.start) || byDue(a, b));
+  const all = c.tasks.filter((t) => t.phase === p.id);
+  const dl = dateless() || !p.start;
+  // Dateless: keep plan order. Dated: sort by start, then due.
+  const ts = dl ? all : all.sort((a, b) => a.start.localeCompare(b.start) || byDue(a, b));
   const dn = ts.filter((t) => t.status === 'done').length;
-  const finished = ts.length > 0 && dn === ts.length, current = p.start <= today && today <= p.end;
+  const finished = ts.length > 0 && dn === ts.length;
+  if (dl) {
+    // Waiting tasks only make a later stage "Active" once every earlier stage is finished, so blocked future work doesn't light up.
+    const idx = B.phases.indexOf(p);
+    const earlierOpen = B.phases.slice(0, Math.max(0, idx)).some((q) => c.tasks.some((t) => t.phase === q.id && t.status !== 'done'));
+    const current = !finished && (!!p.active || ts.some((t) => t.status === 'doing') || (!earlierOpen && ts.some((t) => t.status === 'waiting')));
+    const tag = finished ? '<span class="tag done">Done</span>' : current ? '<span class="tag now">Active</span>' : `<span class="tag next">${esc(p.tag || 'Up next')}</span>`;
+    return { ts, dn, finished, current, tag, comments: countFor([`phase:${p.id}`, ...ts.map((t) => `task:${t.id}`)]) };
+  }
+  const current = p.start <= today && today <= p.end;
   const tag = finished ? '<span class="tag done">Done</span>' : current ? '<span class="tag now">In progress</span>' : p.end < today ? '<span class="tag warn">Finishing</span>' : `<span class="tag next">${diff(today, p.start) <= 7 ? `Starts ${dayName(p.start)}` : `From ${fmt(p.start)}`}</span>`;
   return { ts, dn, finished, current, tag, comments: countFor([`phase:${p.id}`, ...ts.map((t) => `task:${t.id}`)]) };
 }
 const docStatusText = (d) => (signedMsg(d.id) ? 'Signed' : d.status);
-function docTone(d) { const s = docStatusText(d) || ''; return /waiting/i.test(s) ? 'warn' : /signed|received|done/i.test(s) ? 'done' : /sent/i.test(s) ? 'now' : 'next'; }
+function docTone(d) { const s = docStatusText(d) || ''; return /waiting|approval/i.test(s) ? 'warn' : /signed|received|done/i.test(s) ? 'done' : /sent|reference/i.test(s) ? 'now' : 'next'; }
+const docReadable = (d) => !!(d && (d.html || (d.blocks && d.blocks.length) || (d.sections && d.sections.length)));
+// A card or update can point at one thing already on the tracker: task:ID, doc:ID, access:ID, q:ID, phase:ID, view:ID.
+const VIEW_TITLE = { questions: 'Questions', needs: 'Needed from you', updates: 'Updates', docs: 'Documents', about: 'How we work', message: 'Message' };
+function refOpen(ref) {
+  const m = /^(task|doc|access|q|phase|view):([A-Za-z0-9_-]+)$/.exec(ref || '');
+  if (!m) return null;
+  const [, type, id] = m;
+  const title = type === 'task' ? byId(id)?.title : type === 'doc' ? docById(id)?.title : type === 'access' ? accessById(id)?.item
+    : type === 'q' ? qById(id)?.q : type === 'phase' ? (B.phases || []).find((p) => p.id === id)?.name : VIEW_TITLE[id];
+  return title ? { type, id, title, attr: `data-${type}="${esc(id)}"` } : null;
+}
+
+/* ---------- Hot right now (Alurei tracker): each card stays 3 days, then clears itself ---------- */
+const HOT_DAYS = 3, HOT_MAX = 10;
+const HOT_SHOWN = new Set();
+let hotSeenT = null;
+const HOT_META = { update: ['Update', 'spark'], doc: ['New document', 'doc'], done: ['Done', 'check'], start: ['Started', 'clock'] };
+function hotSeen() { try { return new Set(JSON.parse(localStorage.getItem('tracker.hotSeen') || '[]')); } catch { return new Set(); } }
+function hotMarkSeen(keys) { try { const s = hotSeen(); keys.forEach((k) => s.add(k)); localStorage.setItem('tracker.hotSeen', JSON.stringify([...s].slice(-300))); } catch {} }
+const hkey = (s) => { let h = 0; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) | 0; return (h >>> 0).toString(36); };
+function hotLife(x) {
+  const [y, m, d] = x.date.split('-').map(Number);
+  const start = x.at ? Date.parse(x.at) : new Date(y, m - 1, d).getTime();
+  const end = x.at ? start + HOT_DAYS * 864e5 : new Date(y, m - 1, d + HOT_DAYS).getTime();
+  const left = end - Date.now();
+  return { left, end, pct: Math.max(4, Math.min(100, (left / (HOT_DAYS * 864e5)) * 100)) };
+}
+function fadeText(life) {
+  const h = life.left / 36e5, last = new Date(life.end - 1), now = new Date();
+  if (last.toDateString() === now.toDateString() || h < 12) return h < 1 ? 'Fades soon' : `Fades in ${Math.ceil(h)} h`;
+  const tmr = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return last.toDateString() === tmr.toDateString() ? 'Here until tomorrow' : `Here until ${last.toLocaleDateString('en-GB', { weekday: 'long' })}`;
+}
+function hotWhen(x) {
+  if (x.label) return esc(x.label); // x.date still drives the 3-day fade
+  if (x.at && x.date === today) return ago(x.at);
+  const a = diff(x.date, today);
+  return a <= 0 ? 'Today' : a === 1 ? 'Yesterday' : fmtW(x.date);
+}
+function hotItems(c) {
+  const live = (date) => date && date <= today && diff(date, today) <= HOT_DAYS;
+  const out = [], told = new Set();
+  for (const u of B.updates || []) if (live(u.date)) {
+    const r = refOpen(u.ref);
+    if (r) told.add(`${r.type}:${r.id}`);
+    out.push({ kind: 'update', rank: 0, date: u.date, at: u.at, label: u.label, text: u.text, ref: r, attr: r ? r.attr : 'data-view="updates"' });
+  }
+  for (const d of B.documents || []) if (live(d.date) && !/^due|coming/i.test(d.status || '') && !told.has(`doc:${d.id}`)) out.push({ kind: 'doc', rank: 1, date: d.date, id: d.id, title: d.title, text: d.summary || docStatusText(d), attr: `data-doc="${esc(d.id)}"` });
+  for (const t of c.done) if (live(t.doneOn) && !told.has(`task:${t.id}`)) out.push({ kind: 'done', rank: 2, date: t.doneOn, id: t.id, title: t.title, sub: phaseOf(t.phase).name, attr: `data-task="${esc(t.id)}"` });
+  for (const t of c.tasks) if (t.status !== 'done' && live(t.startedOn) && !told.has(`task:${t.id}`)) out.push({ kind: 'start', rank: 3, date: t.startedOn, id: t.id, title: t.title, sub: phaseOf(t.phase).name, attr: `data-task="${esc(t.id)}"` });
+  return out
+    .map((x) => ({ ...x, key: `${x.kind}:${x.date}:${x.id || hkey(x.text || '')}`, life: hotLife(x) }))
+    .filter((x) => x.life.left > 0)
+    .sort((a, b) => b.date.localeCompare(a.date) || a.rank - b.rank || String(b.at || '').localeCompare(String(a.at || '')));
+}
+function hotCard(x, i, seen, hottest) {
+  const [label, ic] = HOT_META[x.kind];
+  const motion = HOT_SHOWN.has(x.key) ? '' : HOT_SHOWN.size ? 'fresh' : 'enter';
+  const cls = ['hc', `k-${x.kind}`, hottest ? 'hottest' : '', seen.has(x.key) ? '' : 'unseen', motion].filter(Boolean).join(' ');
+  const body = x.kind === 'done' || x.kind === 'start'
+    ? `<span class="hc-t"><b>${esc(x.title)}</b></span>${x.sub ? `<span class="hc-sub">${esc(x.sub)}</span>` : ''}`
+    : `<span class="hc-t">${x.title ? `<b>${esc(x.title)}</b> · ` : ''}${esc(x.text)}</span>`;
+  const link = x.ref ? `<span class="hc-link">${svg('doc')}<span>${esc(x.ref.title)}</span>${svg('chev')}</span>` : '';
+  return `<button class="${cls}" style="--i:${i}" ${x.attr} data-hot="${x.key}">
+    <span class="hc-top"><span class="hc-kind">${svg(ic)}${label}</span>${hottest ? `<span class="hc-hot">${svg('flame')}Hot</span>` : ''}<time>${hotWhen(x)}</time><i class="hc-dot" title="New since your last visit"></i></span>
+    ${body}${link}
+    <span class="hc-foot"><span class="hc-life"><i style="width:${x.life.pct.toFixed(1)}%"></i></span><small>${fadeText(x.life)}</small></span></button>`;
+}
+function hotBlocks(c) {
+  const items = hotItems(c).slice(0, HOT_MAX), seen = hotSeen();
+  const fresh = items.filter((x) => !seen.has(x.key)).length;
+  const head = (sub) => `<div class="hot-h"><span class="hot-flame${items.length ? '' : ' calm'}">${svg('flame')}</span><div><b>Hot right now</b><small>${sub}</small></div>${items.length ? `<span class="hot-n${fresh ? '' : ' quiet'}">${fresh ? `${fresh} new` : plural(items.length, 'update')}</span>` : ''}</div>`;
+  const cards = (n) => items.slice(0, n).map((x, i) => hotCard(x, i, seen, i === 0)).join('');
+  const rail = `<aside class="hot-rail" aria-label="Hot right now">${head(`What's moving on ${esc(c.M.project)}`)}
+    ${items.length ? `<div class="hot-list">${cards(HOT_MAX)}</div><button class="hot-all" data-view="updates">See all updates${svg('chev')}</button>`
+      : `<div class="hot-empty"><b>All quiet right now</b><p>New updates from ${esc(lead())} appear here and stay for ${HOT_DAYS} days.</p></div>`}
+    <p class="hot-note">Each card stays for ${HOT_DAYS} days, then clears itself. The full history is always in Updates.</p></aside>`;
+  const strip = items.length ? `<section class="hot-strip" aria-label="Hot right now">${head(`Swipe for more · each fades in ${HOT_DAYS} days`)}<div class="hot-row">${cards(8)}</div></section>` : '';
+  items.forEach((x) => HOT_SHOWN.add(x.key));
+  if (fresh && !hotSeenT) hotSeenT = setTimeout(() => { hotSeenT = null; hotMarkSeen(items.map((x) => x.key)); document.querySelectorAll('.hc.unseen').forEach((el) => el.classList.add('seen')); }, 6000);
+  return { rail, strip };
+}
 
 /* ---------- Page ---------- */
 function page(c) {
-  const M = c.M, d = diff(today, M.launch);
-  const line = c.launched ? `Launched ${fmtL(M.launch)}` : `${plural(d, 'day')} to go${c.nextMs ? ` · Next milestone: <b>${esc(c.nextMs.title)}</b>, ${fmtW(c.nextMs.due)}` : ''}`;
+  const M = c.M, dl = !!M.dateless || !M.launch;
+  let heading, line;
+  if (dl) {
+    heading = `<h1>${esc(M.headline || M.project)}</h1>`;
+    line = esc(M.subline || '');
+  } else {
+    const d = diff(today, M.launch);
+    heading = `<h1>${c.launched ? esc(M.liveLabel || `${M.project} is live`) : `${esc(M.goalLabel || 'Launch on')} ${esc(fmtL(M.launch))}`}</h1>`;
+    line = c.launched ? `Launched ${fmtL(M.launch)}` : `${plural(d, 'day')} to go${c.nextMs ? ` · Next milestone: <b>${esc(c.nextMs.title)}</b>, ${fmtW(c.nextMs.due)}` : ''}`;
+  }
   const needHtml = c.needNow.length ? `
-    <div class="box need"><div class="need-h">Waiting on you <span class="count">${c.needNow.length}</span></div>
+    <div class="box need"><div class="need-h">${M.dateless ? 'Waiting on Ayesha &amp; Lalit' : 'Waiting on you'} <span class="count">${c.needNow.length}</span></div>
       ${c.needNow.slice(0, 3).map((n) => needRow(n)).join('')}
-      <button class="more" data-view="needs">See everything we need from you</button></div>` : '';
+      <button class="more" data-view="needs">${M.dateless ? 'See everything we’re waiting on' : 'See everything we need from you'}</button></div>` : '';
   const cards = B.phases.map((p, i) => {
     const x = phaseInfo(p, c);
     return `<button class="pc ${x.current && !x.finished ? 'now' : ''}" data-phase="${p.id}">
       <span class="pc-top"><span>${String(i + 1).padStart(2, '0')}</span>${x.tag}</span>
-      <span class="pc-name">${esc(p.name)}</span><span class="pc-d">${fmt(p.start)} – ${fmt(p.end)}</span>
+      <span class="pc-name">${esc(p.name)}</span><span class="pc-d">${p.window ? esc(p.window) : `${fmt(p.start)} – ${fmt(p.end)}`}</span>
       <span class="pc-bot">${mring(x.ts.length ? x.dn / x.ts.length : 0, p.color)}<span><b>${x.dn}</b> of ${x.ts.length} done</span>${ccHtml(x.comments)}</span></button>`;
   }).join('');
   const general = countFor(['general']);
-  return `<div class="page">
+  const hot = hotBlocks(c);
+  return `<div class="shell"><div class="page">
     <div class="top"><div class="brand"><span class="mark">${esc((M.project || 'P')[0])}</span><span>${esc(M.project)}</span><span>Project tracker</span></div>
       <div class="live" id="live"><span class="pulse"></span><span id="ago"></span></div></div>
     <nav class="quick" aria-label="Sections">
@@ -913,17 +1176,18 @@ function page(c) {
     </nav>
     <section class="status">
       <span class="health ${c.health.tone}"><i></i>${c.health.label}</span>
-      <h1>${c.launched ? esc(M.liveLabel || `${M.project} is live`) : `${esc(M.goalLabel || 'Launch on')} ${esc(fmtL(M.launch))}`}</h1>
+      ${heading}
       <p class="meta">${line}</p>
       <div class="prog"><span class="bar"><i style="width:${c.pct}%"></i></span><div class="prog-l"><span><b>${c.done.length}</b> of ${c.tasks.length} tasks done</span><span>${c.pct}%</span></div></div>
     </section>
+    ${hot.strip}
     ${needHtml}
     <div class="sec-h"><h2>Progress by phase</h2><span>Tap a phase to see its tasks</span></div>
     <div class="pcards">${cards}</div>
     <div class="sec-h"><h2>Latest updates</h2>${c.feed.length > 3 ? '<button data-view="updates">View all</button>' : ''}</div>
     <div class="box">${c.feed.length ? c.feed.slice(0, 3).map(feedRow).join('') : '<div class="up"><time></time><span>No updates yet.</span></div>'}</div>
     <footer>Prepared by ${esc(M.preparedBy)}. This page updates by itself, so there's no need to refresh.<br>It's a private link for ${esc(M.project)}. Please don't forward it.</footer>
-  </div>`;
+  </div>${hot.rail}</div>`;
 }
 
 /* ---------- Panel views ---------- */
@@ -931,46 +1195,69 @@ const ul = (a) => `<ul class="ul">${a.map((x) => `<li>${esc(x)}</li>`).join('')}
 const chip = (t) => `<button class="chip" data-task="${t.id}">${icon(state(t).k)}<span>${esc(t.title)}</span></button>`;
 function vTask(t) {
   const p = phaseOf(t.phase), s = state(t), w = when(t), I = t.info;
-  const acc = B.access.filter((a) => a.tasks.includes(t.id));
-  const after = t.depends.map(byId).filter(Boolean);
-  const next = B.tasks.filter((x) => x.depends.includes(t.id));
-  const props = [['Status', `${icon(s.k)}${esc(s.label)}`], ['Owner', esc(who(t.owner))], ['Dates', `${t.start === t.due ? fmtW(t.due) : `${fmt(t.start)} → ${fmt(t.due)}`} <span style="color:var(--muted)">· ${w.text}</span>`]];
+  const acc = B.access.filter((a) => (a.tasks || []).includes(t.id));
+  const after = (t.depends || []).map(byId).filter(Boolean);
+  const next = B.tasks.filter((x) => (x.depends || []).includes(t.id));
+  const props = [['Status', `${icon(s.k)}${esc(s.label)}`], ['Owner', esc(who(t.owner))]];
+  if (t.waitingOn && t.status !== 'done') props.push(['Waiting on', esc(t.waitingOn)]);
+  if (dateless()) props.push(['Group', esc(p.name)]);
+  if (t.milestone) props.push(['Milestone', esc(t.milestone)]);
+  if (!dateless() && t.due) props.push(['Dates', `${t.start === t.due ? fmtW(t.due) : `${fmt(t.start)} → ${fmt(t.due)}`} <span style="color:var(--muted)">· ${w.text}</span>`]);
   if (t.progress && t.status !== 'done') props.push(['Progress', `<span class="bar"><i style="width:${(t.progress[0] / t.progress[1]) * 100}%"></i></span><span>${t.progress[0]} of ${t.progress[1]} steps</span>`]);
-  if (t.status === 'done' && t.doneOn) props.push(['Completed', fmtL(t.doneOn)]);
+  if (t.status === 'done' && t.doneOn && !dateless()) props.push(['Completed', fmtL(t.doneOn)]);
   let h = `<div class="p-eye"><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</div><h3>${esc(t.title)}</h3><dl class="props">${props.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
   if (I.what) h += `<div class="blk"><h4>What this is</h4><p>${esc(I.what)}</p></div>`;
   if (I.why) h += `<div class="blk"><h4>Why it matters</h4><p>${esc(I.why)}</p></div>`;
-  if (I.need.length && t.status !== 'done') h += `<div class="note warn"><h4>What we need from you</h4>${ul(I.need)}${acc.length ? `<div class="chips" style="margin-top:10px">${acc.map((a) => `<button class="chip" data-access="${a.id}">${svg('key', 'ic')}<span>${esc(a.item)}</span></button>`).join('')}</div>` : ''}</div>`;
-  if (I.involves.length) h += `<div class="blk"><h4>What's involved</h4>${ul(I.involves)}</div>`;
+  if (Array.isArray(t.subtasks) && t.subtasks.length) h += `<div class="blk"><h4>Steps / subtasks</h4><ol class="ol">${t.subtasks.map((x) => `<li>${esc(typeof x === 'string' ? x : x.title || x.text || '')}</li>`).join('')}</ol></div>`;
+  if ((I.need || []).length && t.status !== 'done') h += `<div class="note warn"><h4>${t.waitingOn ? `Waiting on ${esc(t.waitingOn)}` : 'What we need from you'}</h4>${ul(I.need)}${acc.length ? `<div class="chips" style="margin-top:10px">${acc.map((a) => `<button class="chip" data-access="${a.id}">${svg('key', 'ic')}<span>${esc(a.item)}</span></button>`).join('')}</div>` : ''}</div>`;
+  if ((I.involves || []).length) h +=`<div class="blk"><h4>What's involved</h4>${ul(I.involves)}</div>`;
   if (I.done) h += `<div class="note good"><h4>${t.status === 'done' ? 'Delivered' : 'Done when'}</h4><p>${esc(I.done)}</p></div>`;
   if (after.length) h += `<div class="blk"><h4>Comes after</h4><div class="chips">${after.map(chip).join('')}</div></div>`;
   if (next.length) h += `<div class="blk"><h4>Leads to</h4><div class="chips">${next.map(chip).join('')}</div></div>`;
   return h + commentsHtml(`task:${t.id}`, needsOk(t));
 }
 function vAccess(a) {
-  const ts = a.tasks.map(byId).filter(Boolean);
-  const w = ['received', 'not needed'].includes(a.status) ? null : byWhen(a.by);
+  const ts = (a.tasks || []).map(byId).filter(Boolean);
+  const w = ['received', 'not needed'].includes(a.status) ? null : byWhen(a.by, a.badge);
+  const decision = a.kind === 'decision';
   const st = a.status === 'received' ? icon('done') : ['asked', 'waiting'].includes(a.status) ? icon('wait') : icon('todo');
-  let h = `<div class="p-eye">${svg('key', 'ic')}Access we need</div><h3>${esc(a.item)}</h3>
-    <dl class="props"><div><dt>Status</dt><dd>${st}${esc(ACCESS[a.status] || 'Coming up')}</dd></div>${a.by ? `<div><dt>Needed by</dt><dd>${fmtW(a.by)}${w && w.cls === 'late' ? ' <span style="color:var(--bad)">· overdue</span>' : ''}</dd></div>` : ''}<div><dt>Who</dt><dd>${esc(a.from)}</dd></div></dl>`;
+  const stText = ['asked', 'waiting'].includes(a.status) && (a.badge || a.waitingOn) ? a.badge || `Waiting on ${a.waitingOn}` : ACCESS[a.status] || 'Coming up';
+  let h = `<div class="p-eye">${svg(decision ? 'pen' : 'key', 'ic')}${decision ? 'Decision we need' : 'Access we need'}</div><h3>${esc(a.item)}</h3>
+    <dl class="props"><div><dt>Status</dt><dd>${st}${esc(stText)}</dd></div>${a.by ? `<div><dt>Needed by</dt><dd>${fmtW(a.by)}${w && w.cls === 'late' ? ' <span style="color:var(--bad)">· overdue</span>' : ''}</dd></div>` : ''}<div><dt>Who</dt><dd>${esc(a.from)}</dd></div></dl>`;
   if (a.sign) h += signCard(a.sign);
-  if (a.why) h += `<div class="blk"><h4>Why I need it</h4><p>${esc(a.why)}</p></div>`;
-  h += `<div class="blk"><h4>How to give it</h4>${a.howTo.length ? `<ol class="ol">${a.howTo.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : `<p>${esc(a.how)}</p>`}</div>`;
-  h += `<div class="note info"><h4>Safe sharing</h4><p>Please send invitations rather than passwords. Passwords and keys never go by WhatsApp, email or these comments, and any access can be removed at any time.</p></div>`;
+  if (a.why) h += `<div class="blk"><h4>${decision ? 'Why it matters' : 'Why I need it'}</h4><p>${esc(a.why)}</p></div>`;
+  const howTo = a.howTo || [];
+  h += `<div class="blk"><h4>${decision ? 'How to answer' : 'How to give it'}</h4>${howTo.length ? `<ol class="ol">${howTo.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : `<p>${esc(a.how)}</p>`}</div>`;
+  if (!decision) h += `<div class="note info"><h4>Safe sharing</h4><p>Please send invitations rather than passwords. Passwords and keys never go by WhatsApp, email or these comments, and any access can be removed at any time.</p></div>`;
   if (ts.length) h += `<div class="blk"><h4>Used for</h4><div class="chips">${ts.map(chip).join('')}</div></div>`;
   return h + commentsHtml(`access:${a.id}`, accessOk(a));
 }
 function vPhase(p) {
   const x = phaseInfo(p, C), i = B.phases.indexOf(p), pc = x.ts.length ? Math.round((x.dn / x.ts.length) * 100) : 0;
   let h = `<div class="p-eye"><span class="dot" style="background:${p.color}"></span>Phase ${i + 1} of ${B.phases.length}</div><h3>${esc(p.name)}</h3>
-    <dl class="props"><div><dt>Status</dt><dd>${x.tag}</dd></div><div><dt>Dates</dt><dd>${fmtW(p.start)} → ${fmtW(p.end)}</dd></div><div><dt>Progress</dt><dd><span class="bar"><i style="width:${pc}%"></i></span><span>${x.dn} of ${x.ts.length} tasks</span></dd></div></dl>`;
+    <dl class="props"><div><dt>Status</dt><dd>${x.tag}</dd></div>${p.window || dateless() ? `<div><dt>Stage</dt><dd>${esc(p.window || '')}</dd></div>` : `<div><dt>Dates</dt><dd>${fmtW(p.start)} → ${fmtW(p.end)}</dd></div>`}<div><dt>Progress</dt><dd><span class="bar"><i style="width:${pc}%"></i></span><span>${x.dn} of ${x.ts.length} tasks</span></dd></div></dl>`;
   if (p.summary) h += `<div class="blk"><h4>About this phase</h4><p>${esc(p.summary)}</p></div>`;
   if (p.outcome) h += `<div class="note good"><h4>Goal</h4><p>${esc(p.outcome)}</p></div>`;
-  h += `<p class="p-sub">Tasks · ${x.ts.length}</p><div class="p-list">${x.ts.map(taskRow).join('')}</div>`;
+  if (x.ts.some((t) => t.milestone)) {
+    // Group under milestone subheadings, in plan order (first appearance).
+    const groups = [];
+    x.ts.forEach((t) => { const k = t.milestone || 'Other tasks'; let g = groups.find((q) => q.k === k); if (!g) groups.push((g = { k, ts: [] })); g.ts.push(t); });
+    h += groups.map((g) => `<p class="p-sub">${esc(g.k)} · ${g.ts.length}</p><div class="p-list">${g.ts.map(taskRow).join('')}</div>`).join('');
+  } else h += `<p class="p-sub">Tasks · ${x.ts.length}</p><div class="p-list">${x.ts.map(taskRow).join('')}</div>`;
   return h + commentsHtml(`phase:${p.id}`, false, 'Comments on this phase');
 }
 function vNeeds() {
   const sec = (title, list, tone, empty) => `<p class="p-sub">${title}</p>${list.length ? `<div class="p-list">${list.map((n) => needRow(n, tone)).join('')}</div>` : `<p class="p-empty">${empty}</p>`}`;
+  if (dateless()) {
+    const on = (name) => C.needNow.filter((n) => n.wo === name);
+    const ay = on('Ayesha'), la = on('Lalit'), other = C.needNow.filter((n) => !['Ayesha', 'Lalit'].includes(n.wo));
+    return `<div class="p-eye">${svg('list', 'ic')}Waiting on</div><h3>What we're waiting on</h3>
+    <p class="p-empty" style="color:var(--ink2)">Tap any item to see why it's needed and exactly how to give it. Ayesha covers access and assets; Lalit has four decisions only, batched into one message or one short call.</p>
+    ${sec(`Waiting on Ayesha · ${ay.length}`, ay, '', 'Nothing waiting on Ayesha right now. Thank you!')}
+    ${sec(`Waiting on Lalit · ${la.length}`, la, '', 'No decisions waiting on Lalit right now. Thank you!')}
+    ${other.length ? sec(`Also waiting · ${other.length}`, other, '', '') : ''}
+    ${C.needDone.length ? sec(`Received · ${C.needDone.length}`, C.needDone, 'done', '') : ''}`;
+  }
   return `<div class="p-eye">${svg('list', 'ic')}Needed from you</div><h3>Everything we need from you</h3>
     <p class="p-empty" style="color:var(--ink2)">Tap any item to see why it's needed and exactly how to give it. This covers the next three weeks.</p>
     ${sec(`Waiting on you now · ${C.needNow.length}`, C.needNow, '', 'Nothing right now. Thank you!')}
@@ -983,17 +1270,115 @@ function vUpdates() {
 function vDocs() {
   const docs = B.documents || [];
   return `<div class="p-eye">${svg('doc', 'ic')}Documents</div><h3>Documents</h3>
-    <p class="p-empty" style="color:var(--ink2)">The key documents for the project and where each one stands. Tap one to comment on it.</p>
-    ${docs.length ? `<div class="p-list">${docs.map((d) => `<button class="row" data-doc="${d.id}"><span class="kind doc">${svg('doc')}</span><span class="row-t">${esc(d.title)}<small>${fmt(d.date)}<span class="m-when"> · ${esc(docStatusText(d))}</span></small></span><span class="when"><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span></span>${ccHtml(countFor([`doc:${d.id}`]))}${svg('chev', 'chev')}</button>`).join('')}</div>` : '<p class="p-empty">No documents yet.</p>'}`;
+    <p class="p-empty" style="color:var(--ink2)">The key documents for the project. Tap one to open it as a page, or to see where it stands.</p>
+    ${docs.length ? `<div class="p-list">${docs.map((d) => `<button class="row" data-doc="${d.id}"><span class="kind doc">${svg('doc')}</span><span class="row-t">${esc(d.title)}<small>${d.date ? fmt(d.date) : esc(d.period || '')}<span class="m-when"> · ${esc(docStatusText(d))}</span></small></span><span class="when"><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span></span>${ccHtml(countFor([`doc:${d.id}`]))}${svg('chev', 'chev')}</button>`).join('')}</div>` : '<p class="p-empty">No documents yet.</p>'}`;
 }
 function vDoc(d) {
   let h = `<div class="p-eye">${svg('doc', 'ic')}Document</div><h3>${esc(d.title)}</h3>
-    <dl class="props"><div><dt>Status</dt><dd><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span></dd></div><div><dt>Date</dt><dd>${fmtW(d.date)}</dd></div></dl>`;
+    <dl class="props"><div><dt>Status</dt><dd><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span></dd></div>${d.date ? `<div><dt>Date</dt><dd>${fmtW(d.date)}</dd></div>` : d.period ? `<div><dt>Period</dt><dd>${esc(d.period)}</dd></div>` : ''}</dl>`;
   if (d.sign) h += signCard(d.id);
   if (d.summary) h += `<div class="blk"><h4>What it covers</h4><p>${esc(d.summary)}</p></div>`;
-  if (d.html && !d.sign) h += `<div class="action-b" style="margin:0 0 22px"><button class="btn ghost" data-read="${d.id}">Read it here</button></div>`;
-  h += `<div class="note info"><h4>Where to find it</h4><p>${esc(lead())} sends documents as PDF. If anything needs changing, comment below or send a voice note.</p></div>`;
+  if (docReadable(d)) h += `<div class="action-b" style="margin:0 0 22px"><button class="btn" data-read-page="${d.id}">Read the page</button></div>`;
+  else h += `<div class="note info"><h4>Where to find it</h4><p>${esc(lead())} sends documents as PDF. If anything needs changing, comment below or send a voice note.</p></div>`;
   return h + commentsHtml(`doc:${d.id}`, false);
+}
+
+/* ---------- Document pages (Alurei library blocks, plus HTML pages) ---------- */
+// Blocks: h, h3, p, list, numbered, box, table, words, open. Text is escaped; https links become links.
+const qLinkify = (t) => esc(t).replace(/https:\/\/[^\s<]+?(?=[).,;:]?(?:\s|$))/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
+function libBlockHtml(b) {
+  if (!b || !b.type) return '';
+  const li = (arr) => (arr || []).map((x) => `<li>${qLinkify(x)}</li>`).join('');
+  switch (b.type) {
+    case 'h': return `<h2>${esc(b.text)}</h2>`;
+    case 'h3': return `<h3>${esc(b.text)}</h3>`;
+    case 'table': return `<div class="lib-tw"><table class="lib-t">${b.head ? `<thead><tr>${b.head.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead>` : ''}<tbody>${(b.rows || []).map((r) => `<tr>${r.map((c, i) => i === 0 ? `<th scope="row">${esc(c)}</th>` : `<td>${qLinkify(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    case 'p': return `<p>${qLinkify(b.text)}</p>`;
+    case 'list': return `<ul>${li(b.items)}</ul>`;
+    case 'numbered': return `<ol>${li(b.items)}</ol>`;
+    case 'box': return `<div class="note ${['good', 'info', 'warn'].includes(b.tone) ? b.tone : 'info'}">${b.title ? `<h4>${esc(b.title)}</h4>` : ''}${b.text ? `<p>${qLinkify(b.text)}</p>` : ''}${b.items ? `<ul class="ul">${(b.items || []).map((x) => `<li>${qLinkify(x)}</li>`).join('')}</ul>` : ''}</div>`;
+    case 'words': return `<dl class="rh-dl">${(b.items || []).map((w) => `<div class="rh"><b>${esc(w.word)}</b><span>${qLinkify(w.means)}</span></div>`).join('')}</dl>`;
+    case 'open': { const d = docById(b.doc); return d ? `<div class="lib-act"><button class="btn" data-read-page="${esc(d.id)}">${svg('doc')}${esc(b.label || d.title)}</button></div>` : ''; }
+    default: return '';
+  }
+}
+function prepareHtml(html) {
+  const w = document.createElement('div');
+  w.innerHTML = html || '';
+  const h1 = w.querySelector('h1');
+  if (h1) h1.remove();
+  const heads = [...w.querySelectorAll('h2')];
+  heads.forEach((h, i) => { if (!h.id) h.id = 'h-' + (i + 1); });
+  w.querySelectorAll('table').forEach((t) => {
+    if (t.parentElement && t.parentElement.classList.contains('read-tw')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'read-tw';
+    t.classList.add('read-t');
+    t.replaceWith(wrap);
+    wrap.appendChild(t);
+  });
+  w.querySelectorAll('a[href]').forEach((a) => {
+    const href = a.getAttribute('href') || '';
+    if (/^https?:/i.test(href)) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
+  });
+  const toc = heads.length > 2 ? `<nav class="read-toc" aria-label="On this page">${heads.map((h) => `<a href="#${h.id}">${esc(h.textContent)}</a>`).join('')}</nav>` : '';
+  return toc + w.innerHTML;
+}
+function sectionHtml(d) {
+  if (d.sections && d.sections.length) {
+    const toc = d.sections.length > 1 ? `<nav class="read-toc" aria-label="On this page">${d.sections.map((s, i) => `<a href="#sec-${esc(s.id || i)}">${esc(s.title || 'Section')}</a>`).join('')}</nav>` : '';
+    const parts = d.sections.map((s, i) => {
+      const inner = s.html ? prepareHtml(s.html).replace(/^<nav class="read-toc"[\s\S]*?<\/nav>/, '') : `<div class="lib-body">${(s.blocks || []).map(libBlockHtml).join('')}</div>`;
+      return `<section class="read-sec" id="sec-${esc(s.id || i)}"><h2>${esc(s.title || '')}</h2>${inner}</section>`;
+    });
+    return toc + parts.join('');
+  }
+  if (d.blocks && d.blocks.length) {
+    const heads = d.blocks.filter((b) => b && (b.type === 'h' || b.type === 'h3') && b.text);
+    const toc = heads.length > 2 ? `<nav class="read-toc" aria-label="On this page">${heads.map((b, i) => `<a href="#b-${i}">${esc(b.text)}</a>`).join('')}</nav>` : '';
+    let n = 0;
+    const body = d.blocks.map((b) => {
+      if (b && (b.type === 'h' || b.type === 'h3')) { const id = 'b-' + n; n += 1; return libBlockHtml(b).replace(/^<(h2|h3)>/, `<$1 id="${id}">`); }
+      return libBlockHtml(b);
+    }).join('');
+    return toc + `<div class="lib-body">${body}</div>`;
+  }
+  return prepareHtml(d.html || '');
+}
+let readId = null;
+function openRead(id, keepScroll) {
+  const d = docById(id);
+  if (!d || !docReadable(d)) return;
+  const y = keepScroll ? (($('#read .read-scroll') || {}).scrollTop || 0) : 0;
+  readId = id;
+  const el = $('#read');
+  const pages = [...(B.documents || []).filter(docReadable), ...libraryDocs().filter(docReadable)];
+  const side = pages.map((p) => `<button class="read-item${p.id === d.id ? ' on' : ''}" data-read-page="${esc(p.id)}"><b>${esc(p.title)}</b><small>${esc(docStatusText(p))}${p.date ? ` · ${fmt(p.date)}` : p.period ? ` · ${esc(p.period)}` : ''}</small></button>`).join('');
+  const picks = pages.map((p) => `<button class="read-chip${p.id === d.id ? ' on' : ''}" data-read-page="${esc(p.id)}">${esc(p.title)}</button>`).join('');
+  el.innerHTML = `<div class="read-top"><button class="p-btn" data-read-close aria-label="Close">${svg('x')}</button><span class="read-name">${svg('doc')}Documents</span><span class="read-sp"></span>${d.sign ? `<button class="btn" data-sign="${esc(d.id)}">Review and sign</button>` : ''}</div>
+    <div class="read-wrap"><aside class="read-side"><p class="read-side-t">Pages</p><div class="read-list">${side}</div></aside>
+    <div class="read-scroll"><article class="read-doc">
+      <div class="read-meta"><span class="tag ${docTone(d)}">${esc(docStatusText(d))}</span>${d.date ? `<span>${fmtW(d.date)}</span>` : d.period ? `<span>${esc(d.period)}</span>` : ''}<span>From ${esc(lead())}</span></div>
+      <h1>${esc(d.title)}</h1>
+      ${d.summary ? `<p class="read-sum">${esc(d.summary)}</p>` : ''}
+      <div class="read-picks">${picks}</div>
+      <div class="read-body">${sectionHtml(d)}</div>
+      ${d.sign ? signCard(d.id) : ''}
+      ${commentsHtml(`doc:${d.id}`, false)}
+    </article></div></div>`;
+  el.classList.add('on');
+  el.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  const sc = $('.read-scroll', el);
+  if (sc) sc.scrollTop = y;
+}
+function closeRead() {
+  readId = null;
+  const el = $('#read');
+  el.classList.remove('on');
+  el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = '';
+  if (!ui.stack.length && !SIGN.el) document.body.style.overflow = '';
 }
 function vQuestions() {
   const qs = B.questions || [];
@@ -1089,7 +1474,8 @@ function openFromLink() {
   if (['needs', 'updates', 'docs', 'about', 'message', 'questions'].includes(type) && !id) return openPanel(type);
   if (type === 'q' && id === 'all') return openAllAtOnce();
   if (type === 'q' && qById(id)) { openPanel('questions'); return openPanel('question', id, true); }
-  if ((type === 'task' && byId(id)) || (type === 'doc' && docById(id)) || (type === 'access' && accessById(id))) return openPanel(type, id);
+  if (type === 'doc' && docById(id)) { const d = docById(id); if (docReadable(d)) return openRead(id); return openPanel('doc', id); }
+  if ((type === 'task' && byId(id)) || (type === 'access' && accessById(id))) return openPanel(type, id);
 }
 function render() {
   C = compute();
@@ -1099,6 +1485,7 @@ function render() {
   window.scrollTo(0, y);
   stamp();
   if (ui.stack.length) { if (composing()) paintThreads(); else drawPanel(true); }
+  if (readId) { if (composing()) paintThreads(); else openRead(readId, true); }
 }
 function ago(iso) {
   const s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
@@ -1156,7 +1543,11 @@ document.addEventListener('click', (e) => {
   const sa = t.closest('[data-s]'); if (sa && SIGN.el && SIGN.el.contains(sa)) return signAction(sa.dataset.s);
   const sg = t.closest('[data-sign]'); if (sg) return openSign(sg.dataset.sign);
   const sv = t.closest('[data-sign-view]'); if (sv) return openSign(sv.dataset.signView, true);
-  const rd = t.closest('[data-read]'); if (rd) { openSign(rd.dataset.read, false); SIGN.step = 'view'; SIGN.png = null; return paintSign(); }
+  if (t.closest('[data-read-close]')) return closeRead();
+  const rp = t.closest('[data-read-page]'); if (rp) return openRead(rp.dataset.readPage);
+  const tocA = t.closest('#read .read-toc a');
+  if (tocA) { e.preventDefault(); const target = document.getElementById((tocA.getAttribute('href') || '').slice(1)); if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+  const rd = t.closest('[data-read]'); if (rd) return openRead(rd.dataset.read);
   const zoom = t.closest('[data-zoom]');
   if (zoom) { const ov = document.createElement('div'); ov.className = 'ovl'; ov.innerHTML = `<img src="${zoom.src}" alt="">`; ov.onclick = () => ov.remove(); document.body.appendChild(ov); return; }
   const act = t.closest('[data-act]');
@@ -1188,7 +1579,7 @@ document.addEventListener('click', (e) => {
   }
   const qa = t.closest('[data-qall]'); if (qa) { e.preventDefault(); return openAllAtOnce(); }
   const qq = t.closest('[data-q]'); if (qq) return openPanel('question', qq.dataset.q, inPanel);
-  const dc = t.closest('[data-doc]'); if (dc) return openPanel('doc', dc.dataset.doc, inPanel);
+  const dc = t.closest('[data-doc]'); if (dc) { const d = docById(dc.dataset.doc); if (d && docReadable(d)) return openRead(d.id); return openPanel('doc', dc.dataset.doc, inPanel); }
   const vw = t.closest('[data-view]'); if (vw) return openPanel(vw.dataset.view, null, inPanel);
 });
 document.addEventListener('input', (e) => { const c = e.target.closest && e.target.closest('.cmp'); if (c && e.target.classList.contains('cmp-text')) draft(c.dataset.key).text = e.target.value; });
@@ -1212,6 +1603,7 @@ document.addEventListener('drop', (e) => { const c = e.target.closest && e.targe
 document.addEventListener('keydown', (e) => {
   const ov = document.querySelector('.ovl');
   if (e.key === 'Escape' && ov) { ov.remove(); return; }
+  if (e.key === 'Escape' && readId && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#read .cmp'))) { closeRead(); return; }
   if (e.key === 'Escape' && SIGN.el) { closeSign(); return; }
   if (e.key === 'Escape' && ui.stack.length) closePanel();
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { const c = e.target.closest && e.target.closest('.cmp'); if (c) sendMsg(c.dataset.key, 'comment'); }
